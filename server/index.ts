@@ -9,6 +9,7 @@ import { runReport } from "./orchestrator.js";
 import { getPdf, getPhoto, putPhoto } from "./lib/store.js";
 import { listIssues, getIssue, updateIssue } from "./lib/issuesStore.js";
 import { verifyFix, type Media } from "./lib/gemini.js";
+import { computeDashboard } from "./lib/dashboard.js";
 import { randomUUID } from "node:crypto";
 import type { ReportRequest, RunEvent } from "./types.js";
 
@@ -92,6 +93,16 @@ app.get("/api/issues/:id", (req, res) => {
   const issue = getIssue(req.params.id);
   if (!issue) return res.status(404).json({ error: "not found" });
   res.json({ issue });
+});
+
+// Predictive hotspot dashboard (F9).
+app.get("/api/dashboard", async (_req, res) => {
+  try {
+    res.json(await computeDashboard());
+  } catch (err) {
+    console.error("[dashboard] error:", err);
+    res.status(500).json({ error: (err as Error).message });
+  }
 });
 
 // Before/after AI verification (F7). Compares the original photo with an

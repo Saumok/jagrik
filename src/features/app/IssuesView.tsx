@@ -56,9 +56,14 @@ export function IssuesView() {
         <Link to="/" aria-label="Home">
           <Logo />
         </Link>
-        <GlassButton to="/report" variant="act" className="!min-h-[44px] !px-5 !text-[0.95rem]">
-          <Plus size={17} weight="bold" /> Report
-        </GlassButton>
+        <div className="flex items-center gap-3">
+          <Link to="/dashboard" className="hidden rounded-full px-4 py-2 text-[0.95rem] text-muted hover:text-ink sm:inline-flex">
+            Dashboard
+          </Link>
+          <GlassButton to="/report" variant="act" className="!min-h-[44px] !px-5 !text-[0.95rem]">
+            <Plus size={17} weight="bold" /> Report
+          </GlassButton>
+        </div>
       </header>
 
       <div className="mx-auto mt-8 max-w-6xl">

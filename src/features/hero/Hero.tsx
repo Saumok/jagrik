@@ -87,6 +87,9 @@ export function Hero() {
           <Link to="/app" className="hidden rounded-full px-4 py-2 text-[0.95rem] text-muted hover:text-ink sm:inline-flex">
             Live issues
           </Link>
+          <Link to="/dashboard" className="hidden rounded-full px-4 py-2 text-[0.95rem] text-muted hover:text-ink sm:inline-flex">
+            Dashboard
+          </Link>
           <GlassButton to="/report" variant="primary" className="!min-h-[44px] !px-5 !text-[0.95rem]">
             Report a problem
           </GlassButton>

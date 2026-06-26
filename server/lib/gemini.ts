@@ -171,6 +171,42 @@ export async function verifyFix(
   }
 }
 
+// Plain-language hotspot predictions (Docs/05 §2, Docs/06 §6). One batched call
+// for all hotspots; template fallback per item when Gemini is off.
+export interface HotspotInput {
+  area: string;
+  issueType: string;
+  count: number;
+  unresolved: number;
+}
+
+export async function generateHotspotPredictions(
+  hotspots: HotspotInput[],
+): Promise<{ predictions: string[]; byGemini: boolean }> {
+  const fallback = hotspots.map(
+    (h) => `${h.count} ${h.issueType} reports in 90 days, ${h.unresolved} unresolved — rising civic risk.`,
+  );
+  if (!ai || hotspots.length === 0) return { predictions: fallback, byGemini: false };
+
+  const prompt = `You are a civic-data analyst for Kolkata. For each hotspot below, write ONE short, plain-language prediction (max 16 words) of the civic risk if it stays unaddressed (e.g. monsoon flooding, accidents, disease). Return ONLY a JSON array of strings, same order, no extra text.\n${JSON.stringify(hotspots)}`;
+
+  try {
+    const res = await ai.models.generateContent({
+      model: env.geminiModel,
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      config: { temperature: 0.5, responseMimeType: "application/json" },
+    });
+    const arr = JSON.parse(stripFences(res.text ?? "")) as unknown;
+    if (Array.isArray(arr) && arr.length === hotspots.length) {
+      return { predictions: arr.map((s) => String(s)), byGemini: true };
+    }
+    return { predictions: fallback, byGemini: false };
+  } catch (err) {
+    console.error("[gemini] predictions failed:", (err as Error).message);
+    return { predictions: fallback, byGemini: false };
+  }
+}
+
 function fallbackDraft(ctx: Parameters<typeof DRAFT_PROMPT>[0]): { subject: string; body: string } {
   return {
     subject: `Civic complaint — ${ctx.issueType} at ${ctx.area} [${ctx.trackingId}]`,

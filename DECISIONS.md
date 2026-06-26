@@ -50,6 +50,12 @@ Running log of build decisions not pre-settled by the Docs, per `Docs/00 §When 
 
 - `POST /api/verify` (after-photo) → Gemini compares against the stored/seeded before-photo → `{fixed, confidence, reason}`; on `fixed` flips the issue to `resolved` with a verification timeline entry and a "Verified by AI" badge on `/issue/:id`. Verified with real Gemini vision (correctly refused two unrelated images).
 
+## Predictive dashboard (F9 — now live)
+
+- **Seed expanded to ~36 issues** (deterministic PRNG) across 8 areas/5 types/90 days with mixed statuses + resolved timestamps, plus the forced Garia drainage hotspot and the 12-affected cluster — gives the dashboard/map credible volume.
+- **`GET /api/dashboard`** aggregates stats (total, resolution rate, avg resolution days, total affected), by-type, by-status, an 8-week trend, slowest department, and top hotspots. Hotspot **predictions are written by Gemini** in one batched call (template fallback) — "recurrence stats + a Gemini narrative is the prediction," no ML model (Docs/05 §2).
+- **`/dashboard`** is a bento liquid-glass page with **hand-rolled animated SVG charts** (donut, 8-week area-line with path-draw, by-type bars) + count-up stat tiles + the hotspots showpiece. No chart library (smaller bundle, on-brand). Reduced-motion safe. Linked from the hero and `/app` navs. ui-ux-pro-max direction (Bento + Liquid Glass + teal) applied.
+
 ## Open / deferred (next)
 
 - GCP projects, billing split, Gemini key, model id: not started (Phase 0).

@@ -1,122 +1,123 @@
-import type { StoredIssue } from "../types.js";
+import type { StoredIssue, IssueType, IssueStatus, Priority } from "../types.js";
+import { lookupAuthority, trackingId } from "./router.js";
 
-// In-memory issues store: seeded demo history + live filed reports. Mirrors
-// Docs/05 §3 (the 12-affected cluster, a resolved one, mixed statuses) so the
-// map/list look alive. Production swaps this for Firestore (Docs/07 §3).
+// In-memory issues store: a seeded demo history + live filed reports. Mirrors
+// Docs/05 §3 (12-affected cluster, a recurring hotspot, ~35 issues over 90 days
+// with mixed statuses) so the map/list/dashboard look alive. Production → Firestore.
 
 const DAY = 1000 * 60 * 60 * 24;
 const now = Date.now();
 
-const SEED: StoredIssue[] = [
-  {
-    id: "seed-cluster-001",
-    trackingId: "KMC-DR-4821",
-    createdAt: now - 6 * DAY,
-    source: "photo",
-    issueType: "drainage",
-    severity: 4,
-    estimatedRepairCost: { minInr: 6000, maxInr: 12000 },
-    riskContext: "Stagnant water on a market street, dengue risk",
-    routedDepartment: "KMC Drainage Department — Borough VII",
-    authorityId: "kmc-drainage-b7",
-    priority: "high",
-    area: "Garia Main Road",
-    lat: 22.4625,
-    lng: 88.3911,
-    ward: 110,
-    affectedCount: 12,
-    status: "in_progress",
-    statusHistory: [
-      { status: "reported", at: now - 6 * DAY, by: "agent" },
-      { status: "acknowledged", at: now - 5 * DAY, by: "authority" },
-      { status: "in_progress", at: now - 3 * DAY, by: "authority" },
-    ],
-    photoUrl: "https://picsum.photos/seed/garia-drain-overflow/640/420",
-    emailDispatched: true,
-    isDemoSeed: true,
-  },
-  {
-    id: "seed-pothole-204",
-    trackingId: "KMC-RD-5093",
-    createdAt: now - 2 * DAY,
-    source: "photo",
-    issueType: "pothole",
-    severity: 4,
-    estimatedRepairCost: { minInr: 8000, maxInr: 15000 },
-    riskContext: "On a school route, high accident risk",
-    routedDepartment: "KMC Roads Department — Borough VII",
-    authorityId: "kmc-roads-b7",
-    priority: "high",
-    area: "Rashbehari Avenue",
-    lat: 22.5121,
-    lng: 88.3702,
-    ward: 85,
-    affectedCount: 3,
-    status: "acknowledged",
-    statusHistory: [
-      { status: "reported", at: now - 2 * DAY, by: "agent" },
-      { status: "acknowledged", at: now - 1 * DAY, by: "authority" },
-    ],
-    photoUrl: "https://picsum.photos/seed/kolkata-pothole-road/640/420",
-    emailDispatched: true,
-    isDemoSeed: true,
-  },
-  {
-    id: "seed-light-061",
-    trackingId: "KMC-LT-3310",
-    createdAt: now - 9 * DAY,
-    source: "voice",
-    issueType: "streetlight",
-    severity: 2,
-    estimatedRepairCost: { minInr: 1500, maxInr: 4000 },
-    riskContext: "Dark stretch near a bus stop",
-    routedDepartment: "KMC Lighting Department — Borough VII",
-    authorityId: "kmc-lighting-b7",
-    priority: "low",
-    audioTranscript: "দোকানের সামনের আলোটা এক সপ্তাহ ধরে জ্বলছে না",
-    audioLang: "bn",
-    area: "Jadavpur 8B",
-    lat: 22.4951,
-    lng: 88.3712,
-    ward: 96,
-    affectedCount: 1,
-    status: "resolved",
-    statusHistory: [
-      { status: "reported", at: now - 9 * DAY, by: "agent" },
-      { status: "acknowledged", at: now - 8 * DAY, by: "authority" },
-      { status: "in_progress", at: now - 6 * DAY, by: "authority" },
-      { status: "resolved", at: now - 4 * DAY, by: "verification" },
-    ],
-    photoUrl: "https://picsum.photos/seed/streetlight-night/640/420",
-    emailDispatched: true,
-    isDemoSeed: true,
-  },
-  {
-    id: "seed-garbage-118",
-    trackingId: "KMC-SW-2274",
-    createdAt: now - 1 * DAY,
-    source: "photo",
-    issueType: "garbage",
-    severity: 3,
-    estimatedRepairCost: { minInr: 2000, maxInr: 5000 },
-    riskContext: "Overflowing vat beside a tea stall",
-    routedDepartment: "KMC Solid Waste Management — Borough VII",
-    authorityId: "kmc-swm-b7",
-    priority: "medium",
-    area: "Lake Gardens",
-    lat: 22.5043,
-    lng: 88.3589,
-    ward: 89,
-    affectedCount: 5,
-    status: "reported",
-    statusHistory: [{ status: "reported", at: now - 1 * DAY, by: "agent" }],
-    photoUrl: "https://picsum.photos/seed/kolkata-garbage-pile/640/420",
-    emailDispatched: true,
-    isDemoSeed: true,
-  },
+// deterministic PRNG so the seed is stable across restarts
+let _s = 1337;
+function rnd() {
+  _s = (_s * 1664525 + 1013904223) % 4294967296;
+  return _s / 4294967296;
+}
+function pick<T>(arr: T[]): T {
+  return arr[Math.floor(rnd() * arr.length)];
+}
+
+const AREAS: { area: string; ward: number; lat: number; lng: number }[] = [
+  { area: "Garia Main Road", ward: 110, lat: 22.4625, lng: 88.3911 },
+  { area: "Rashbehari Avenue", ward: 85, lat: 22.5121, lng: 88.3702 },
+  { area: "Jadavpur 8B", ward: 96, lat: 22.4951, lng: 88.3712 },
+  { area: "Lake Gardens", ward: 89, lat: 22.5043, lng: 88.3589 },
+  { area: "Gariahat Road", ward: 87, lat: 22.519, lng: 88.365 },
+  { area: "Behala Chowrasta", ward: 124, lat: 22.498, lng: 88.312 },
+  { area: "Tollygunge Circular Rd", ward: 93, lat: 22.49, lng: 88.346 },
+  { area: "Dhakuria Station Rd", ward: 92, lat: 22.499, lng: 88.366 },
 ];
 
-const issues = new Map<string, StoredIssue>(SEED.map((i) => [i.id, i]));
+const TYPE_META: Record<Exclude<IssueType, "other" | "unclear">, { min: number; max: number; risk: string; seed: string }> = {
+  pothole: { min: 8000, max: 15000, risk: "On a busy road, accident risk", seed: "kolkata-pothole" },
+  drainage: { min: 6000, max: 12000, risk: "Stagnant water, dengue risk", seed: "kolkata-drain" },
+  streetlight: { min: 1500, max: 4000, risk: "Dark stretch at night", seed: "streetlight-night" },
+  garbage: { min: 2000, max: 5000, risk: "Overflowing vat, hygiene risk", seed: "kolkata-garbage" },
+  water_supply: { min: 5000, max: 50000, risk: "Supply disruption, health risk", seed: "water-pipe" },
+};
+const TYPES = Object.keys(TYPE_META) as (keyof typeof TYPE_META)[];
+
+function sevFor(t: keyof typeof TYPE_META): 1 | 2 | 3 | 4 | 5 {
+  if (t === "streetlight" || t === "garbage") return (pick([2, 3, 3, 4]) as 2 | 3 | 4);
+  return (pick([3, 4, 4, 5]) as 3 | 4 | 5);
+}
+function prioFor(sev: number): Priority {
+  return sev >= 4 ? "high" : sev === 3 ? "medium" : "low";
+}
+
+function makeIssue(
+  id: string,
+  type: keyof typeof TYPE_META,
+  loc: { area: string; ward: number; lat: number; lng: number },
+  ageDays: number,
+  status: IssueStatus,
+  affectedCount = 1,
+): StoredIssue {
+  const meta = TYPE_META[type];
+  const createdAt = now - ageDays * DAY;
+  const sev = sevFor(type);
+  const auth = lookupAuthority(type);
+  const history: StoredIssue["statusHistory"] = [{ status: "reported", at: createdAt, by: "agent" }];
+  if (status !== "reported") history.push({ status: "acknowledged", at: createdAt + 1 * DAY, by: "authority" });
+  if (status === "in_progress" || status === "resolved")
+    history.push({ status: "in_progress", at: createdAt + 2 * DAY, by: "authority" });
+  if (status === "resolved")
+    history.push({ status: "resolved", at: createdAt + Math.ceil(2 + rnd() * 6) * DAY, by: "verification" });
+
+  return {
+    id,
+    trackingId: trackingId(auth.id),
+    createdAt,
+    source: rnd() > 0.5 ? "photo" : "voice",
+    issueType: type,
+    severity: sev,
+    estimatedRepairCost: { minInr: meta.min, maxInr: meta.max },
+    riskContext: meta.risk,
+    routedDepartment: auth.name,
+    authorityId: auth.id,
+    priority: prioFor(sev),
+    area: loc.area,
+    lat: loc.lat,
+    lng: loc.lng,
+    ward: loc.ward,
+    affectedCount,
+    status,
+    statusHistory: history,
+    photoUrl: `https://picsum.photos/seed/${meta.seed}-${id}/640/420`,
+    emailDispatched: true,
+    isDemoSeed: true,
+  };
+}
+
+function buildSeed(): StoredIssue[] {
+  const list: StoredIssue[] = [];
+
+  // The 12-affected cluster + recurring drainage hotspot on Garia Main Road.
+  list.push(makeIssue("seed-cluster-001", "drainage", AREAS[0], 6, "in_progress", 12));
+  for (let i = 0; i < 4; i++) {
+    list.push(makeIssue(`seed-garia-drain-${i}`, "drainage", AREAS[0], 8 + i * 16, i === 3 ? "resolved" : "reported"));
+  }
+
+  // A clean resolved streetlight (the before/after demo target) with Bengali voice.
+  const light = makeIssue("seed-light-061", "streetlight", AREAS[2], 9, "resolved");
+  light.audioTranscript = "দোকানের সামনের আলোটা এক সপ্তাহ ধরে জ্বলছে না";
+  light.audioLang = "bn";
+  list.push(light);
+
+  // ~30 issues spread across areas / types / dates / statuses.
+  const statuses: IssueStatus[] = ["reported", "acknowledged", "in_progress", "resolved"];
+  for (let i = 0; i < 30; i++) {
+    const type = pick(TYPES);
+    const loc = pick(AREAS.slice(1)); // keep Garia weighted by the forced drainage above
+    const age = Math.floor(rnd() * 88) + 1;
+    const status = pick(statuses);
+    list.push(makeIssue(`seed-gen-${i}`, type, loc, age, status));
+  }
+  return list;
+}
+
+const issues = new Map<string, StoredIssue>(buildSeed().map((i) => [i.id, i]));
 
 export function addIssue(issue: StoredIssue) {
   issues.set(issue.id, issue);
