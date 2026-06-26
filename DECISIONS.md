@@ -41,6 +41,15 @@ Running log of build decisions not pre-settled by the Docs, per `Docs/00 §When 
 - **Gemini: LIVE** (verified doing real reasoning — classified a keyword-free "dry taps" report as `water_supply`). Key is in `.env` (git-ignored); rotate it since it appeared in chat.
 - **Email: pending** the Gmail app-password only (sender/from/demo-inbox pre-filled to the account address). Stays simulated until the 16-char password is added.
 
+## Hosting (zero-billing constraint)
+
+- **Render free tier chosen over Cloud Run.** The user requires no billing / no card; Cloud Run + Maps require a card in 2026, and there is no card-free Google option that runs our Node backend (Firebase free hosting is static-only). Render free runs the full Express service with no card. Tradeoff: not "Google Cloud," so the hackathon's mandatory-GC rule isn't met by this host — flagged to the user. The same server runs unchanged on Cloud Run later if a card is ever added.
+- **Single service:** `server/index.ts` serves `dist/` + `/api/*`; `render.yaml` blueprint, `npm start` = `tsx server/index.ts`, `tsx` moved to dependencies, `engines.node >=20`. Production build verified locally (SPA, deep-link fallback, API all 200).
+
+## Before/after AI verification (F7 — now live)
+
+- `POST /api/verify` (after-photo) → Gemini compares against the stored/seeded before-photo → `{fixed, confidence, reason}`; on `fixed` flips the issue to `resolved` with a verification timeline entry and a "Verified by AI" badge on `/issue/:id`. Verified with real Gemini vision (correctly refused two unrelated images).
+
 ## Open / deferred (next)
 
 - GCP projects, billing split, Gemini key, model id: not started (Phase 0).

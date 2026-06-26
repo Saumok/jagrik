@@ -33,6 +33,19 @@ backend is down it falls back to a local simulator so the demo never breaks.
 - `npm run start` — run the Express server (serves `dist/` if built); used on Cloud Run
 - `npm run typecheck:server` — typecheck the backend
 
+## Deploy live — free, no credit card (Render)
+
+One Render web service runs everything (the Express server serves the built SPA + `/api/*`).
+
+1. Push this repo to GitHub.
+2. On https://render.com (sign in with GitHub — no card) → **New → Blueprint** → pick the repo. It reads `render.yaml`.
+3. Set the secret env vars in the Render dashboard: `GEMINI_API_KEY` (required for the live brain), and the `GMAIL_*` + `DEMO_INBOX` (for real email). The rest are pre-set.
+4. Deploy. You get a public `https://jagrik-xxxx.onrender.com` URL.
+
+Notes: the free tier spins down after ~15 min idle (first request cold-starts ~30-60s — hit it to warm before a demo). In-memory issues reset on restart and re-seed from `issuesStore.ts`.
+
+> The hackathon rules ask for **Google Cloud (Cloud Run)**, which requires billing enabled (a card, never charged under free limits). This same server runs unchanged on Cloud Run via `gcloud run deploy` if you choose that path later (`Docs/07 §7`).
+
 ## Going from demo to fully live
 
 The app runs today with **zero keys** (classification/draft use a deterministic fallback;
