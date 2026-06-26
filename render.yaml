@@ -1,0 +1,29 @@
+# Render Blueprint — free, no credit card. One web service serves the built SPA
+# and the /api/* routes (server/index.ts serves dist/ in production).
+# Deploy: push to GitHub → Render → New → Blueprint → pick this repo.
+services:
+  - type: web
+    name: jagrik
+    runtime: node
+    plan: free
+    region: singapore # closest free region to Kolkata; oregon/frankfurt also fine
+    # --include=dev so vite/tsc are available for the build under NODE_ENV=production
+    buildCommand: npm install --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: GEMINI_API_KEY
+        sync: false # set in the Render dashboard (secret)
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: GMAIL_USER
+        sync: false
+      - key: GMAIL_APP_PASSWORD
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+      - key: DEMO_INBOX
+        sync: false

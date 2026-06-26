@@ -1,0 +1,55 @@
+{
+  "name": "jagrik",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Jagrik — See it. Say it. Solved. Hyperlocal civic-action agent (Vibe2Ship PS2).",
+  "scripts": {
+    "dev": "concurrently -n web,api -c cyan,magenta \"npm:dev:web\" \"npm:dev:server\"",
+    "dev:web": "vite",
+    "dev:server": "tsx watch server/index.ts",
+    "build": "tsc -b && vite build",
+    "start": "tsx server/index.ts",
+    "preview": "vite preview",
+    "lint": "tsc -b --noEmit",
+    "typecheck:server": "tsc -p tsconfig.server.json"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@fontsource-variable/outfit": "^5.2.8",
+    "@google/genai": "^2.10.0",
+    "@phosphor-icons/react": "^2.1.7",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "motion": "^11.15.0",
+    "multer": "^2.2.0",
+    "nodemailer": "^9.0.1",
+    "pdfkit": "^0.19.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.1.1",
+    "tsx": "^4.22.4"
+  },
+  "devDependencies": {
+    "@fontsource-variable/hanken-grotesk": "^5.1.0",
+    "@fontsource/jetbrains-mono": "^5.1.1",
+    "@fontsource/noto-sans-bengali": "^5.1.0",
+    "@fontsource/noto-sans-devanagari": "^5.1.0",
+    "@tailwindcss/vite": "^4.0.0",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/multer": "^2.1.0",
+    "@types/nodemailer": "^8.0.1",
+    "@types/pdfkit": "^0.17.6",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^10.0.3",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.5"
+  }
+}
