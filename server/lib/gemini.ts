@@ -32,6 +32,33 @@ function stripFences(s: string): string {
     .trim();
 }
 
+// Groq fallback (OpenAI-compatible, text-only). Returns parsed JSON or null.
+// Used when Gemini errors or rate-limits, before the deterministic last resort.
+async function groqJSON(prompt: string): Promise<unknown | null> {
+  if (!flags.groqEnabled) return null;
+  try {
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${env.groqApiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: env.groqModel,
+        temperature: 0.2,
+        response_format: { type: "json_object" },
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+    if (!res.ok) {
+      console.error("[groq] http", res.status, (await res.text()).slice(0, 140));
+      return null;
+    }
+    const j = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+    return JSON.parse(stripFences(j.choices?.[0]?.message?.content ?? ""));
+  } catch (err) {
+    console.error("[groq] failed:", (err as Error).message);
+    return null;
+  }
+}
+
 function coerceClassification(raw: unknown): Classification {
   const o = (raw ?? {}) as Record<string, unknown>;
   const issueType = ISSUE_TYPES.includes(o.issueType as IssueType)
@@ -78,34 +105,53 @@ function mockClassify(note?: string, transcript?: string): Classification {
   };
 }
 
-export async function classifyIssue(input: {
+type ClassifyInput = {
   image?: Media;
   audio?: Media;
   note?: string;
   transcript?: string;
   area?: string;
-}): Promise<Classification> {
-  if (!ai) return mockClassify(input.note, input.transcript);
+};
 
+// Tier 1: Gemini (multimodal). Returns null on error so the chain continues.
+async function geminiClassify(input: ClassifyInput): Promise<Classification | null> {
+  if (!ai) return null;
   const parts: Array<Record<string, unknown>> = [{ text: CLASSIFY_PROMPT }];
   if (input.area) parts.push({ text: `Approximate location: ${input.area}` });
   if (input.note) parts.push({ text: `Citizen note: ${input.note}` });
   if (input.transcript) parts.push({ text: `Citizen spoke (transcribed): ${input.transcript}` });
   if (input.image) parts.push({ inlineData: { mimeType: input.image.mime, data: input.image.buf.toString("base64") } });
   if (input.audio) parts.push({ inlineData: { mimeType: input.audio.mime, data: input.audio.buf.toString("base64") } });
-
   try {
     const res = await ai.models.generateContent({
       model: env.geminiModel,
       contents: [{ role: "user", parts }],
       config: { temperature: 0.2, responseMimeType: "application/json" },
     });
-    const text = stripFences(res.text ?? "");
-    return coerceClassification(JSON.parse(text));
+    return coerceClassification(JSON.parse(stripFences(res.text ?? "")));
   } catch (err) {
-    console.error("[gemini] classify failed, using fallback:", (err as Error).message);
-    return mockClassify(input.note, input.transcript);
+    console.error("[gemini] classify failed:", (err as Error).message);
+    return null;
   }
+}
+
+// Tier 2: Groq (text only — uses note/transcript, can't see the image).
+async function groqClassify(input: ClassifyInput): Promise<Classification | null> {
+  const text = [input.area && `Location: ${input.area}`, input.note && `Note: ${input.note}`, input.transcript && `Citizen said: ${input.transcript}`]
+    .filter(Boolean)
+    .join(". ");
+  if (!flags.groqEnabled || !text) return null;
+  const raw = await groqJSON(`${CLASSIFY_PROMPT}\n\nText-only input (no image available): ${text}`);
+  return raw ? coerceClassification(raw) : null;
+}
+
+// Gemini → Groq → deterministic heuristic.
+export async function classifyIssue(input: ClassifyInput): Promise<Classification> {
+  return (
+    (await geminiClassify(input)) ??
+    (await groqClassify(input)) ??
+    mockClassify(input.note, input.transcript)
+  );
 }
 
 const DRAFT_PROMPT = (ctx: {
@@ -186,25 +232,36 @@ export async function generateHotspotPredictions(
   const fallback = hotspots.map(
     (h) => `${h.count} ${h.issueType} reports in 90 days, ${h.unresolved} unresolved — rising civic risk.`,
   );
-  if (!ai || hotspots.length === 0) return { predictions: fallback, byGemini: false };
+  if (hotspots.length === 0) return { predictions: fallback, byGemini: false };
 
-  const prompt = `You are a civic-data analyst for Kolkata. For each hotspot below, write ONE short, plain-language prediction (max 16 words) of the civic risk if it stays unaddressed (e.g. monsoon flooding, accidents, disease). Return ONLY a JSON array of strings, same order, no extra text.\n${JSON.stringify(hotspots)}`;
+  const base = `You are a civic-data analyst for Kolkata. For each hotspot below, write ONE short, plain-language prediction (max 16 words) of the civic risk if it stays unaddressed (e.g. monsoon flooding, accidents, disease), same order.\n${JSON.stringify(hotspots)}`;
 
-  try {
-    const res = await ai.models.generateContent({
-      model: env.geminiModel,
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      config: { temperature: 0.5, responseMimeType: "application/json" },
-    });
-    const arr = JSON.parse(stripFences(res.text ?? "")) as unknown;
-    if (Array.isArray(arr) && arr.length === hotspots.length) {
-      return { predictions: arr.map((s) => String(s)), byGemini: true };
+  // Tier 1: Gemini (returns a JSON array)
+  if (ai) {
+    try {
+      const res = await ai.models.generateContent({
+        model: env.geminiModel,
+        contents: [{ role: "user", parts: [{ text: `${base}\nReturn ONLY a JSON array of strings.` }] }],
+        config: { temperature: 0.5, responseMimeType: "application/json" },
+      });
+      const arr = JSON.parse(stripFences(res.text ?? "")) as unknown;
+      if (Array.isArray(arr) && arr.length === hotspots.length) {
+        return { predictions: arr.map((s) => String(s)), byGemini: true };
+      }
+    } catch (err) {
+      console.error("[gemini] predictions failed:", (err as Error).message);
     }
-    return { predictions: fallback, byGemini: false };
-  } catch (err) {
-    console.error("[gemini] predictions failed:", (err as Error).message);
-    return { predictions: fallback, byGemini: false };
   }
+
+  // Tier 2: Groq (json_object → { "predictions": [...] })
+  if (flags.groqEnabled) {
+    const o = (await groqJSON(`${base}\nReturn ONLY {"predictions": ["...", "..."]}.`)) as { predictions?: unknown[] } | null;
+    if (o?.predictions && Array.isArray(o.predictions) && o.predictions.length === hotspots.length) {
+      return { predictions: o.predictions.map((s) => String(s)), byGemini: true };
+    }
+  }
+
+  return { predictions: fallback, byGemini: false };
 }
 
 function fallbackDraft(ctx: Parameters<typeof DRAFT_PROMPT>[0]): { subject: string; body: string } {
@@ -217,17 +274,25 @@ function fallbackDraft(ctx: Parameters<typeof DRAFT_PROMPT>[0]): { subject: stri
 export async function draftComplaint(
   ctx: Parameters<typeof DRAFT_PROMPT>[0],
 ): Promise<{ subject: string; body: string }> {
-  if (!ai) return fallbackDraft(ctx);
-  try {
-    const res = await ai.models.generateContent({
-      model: env.geminiModel,
-      contents: [{ role: "user", parts: [{ text: DRAFT_PROMPT(ctx) }] }],
-      config: { temperature: 0.5, responseMimeType: "application/json" },
-    });
-    const o = JSON.parse(stripFences(res.text ?? "")) as { subject?: string; body?: string };
-    return { subject: o.subject || `Civic complaint [${ctx.trackingId}]`, body: o.body || fallbackDraft(ctx).body };
-  } catch (err) {
-    console.error("[gemini] draft failed, using fallback:", (err as Error).message);
-    return fallbackDraft(ctx);
+  // Tier 1: Gemini
+  if (ai) {
+    try {
+      const res = await ai.models.generateContent({
+        model: env.geminiModel,
+        contents: [{ role: "user", parts: [{ text: DRAFT_PROMPT(ctx) }] }],
+        config: { temperature: 0.5, responseMimeType: "application/json" },
+      });
+      const o = JSON.parse(stripFences(res.text ?? "")) as { subject?: string; body?: string };
+      if (o.subject && o.body) return { subject: o.subject, body: o.body };
+    } catch (err) {
+      console.error("[gemini] draft failed:", (err as Error).message);
+    }
   }
+  // Tier 2: Groq
+  if (flags.groqEnabled) {
+    const o = (await groqJSON(DRAFT_PROMPT(ctx))) as { subject?: string; body?: string } | null;
+    if (o?.subject && o?.body) return { subject: o.subject, body: o.body };
+  }
+  // Tier 3: deterministic
+  return fallbackDraft(ctx);
 }

@@ -9,6 +9,9 @@ export const env = {
   geminiApiKey: process.env.GEMINI_API_KEY ?? "",
   // ⚠️ VERIFY the exact free-tier multimodal Flash id in AI Studio (Docs/07 §2).
   geminiModel: process.env.GEMINI_MODEL ?? "gemini-2.5-flash",
+  // Groq — fast, free LLM fallback when Gemini errors/rate-limits (text only).
+  groqApiKey: process.env.GROQ_API_KEY ?? "",
+  groqModel: process.env.GROQ_MODEL ?? "llama-3.3-70b-versatile",
   gmailUser: process.env.GMAIL_USER ?? "",
   gmailAppPassword: process.env.GMAIL_APP_PASSWORD ?? "",
   mailFrom: process.env.MAIL_FROM ?? process.env.GMAIL_USER ?? "jagrik@demo.in",
@@ -23,6 +26,7 @@ export const env = {
 
 export const flags = {
   geminiEnabled: env.geminiApiKey.length > 0,
+  groqEnabled: env.groqApiKey.length > 0,
   emailEnabled:
     env.resendApiKey.length > 0 || (env.gmailUser.length > 0 && env.gmailAppPassword.length > 0),
   firestoreEnabled: env.firebaseServiceAccountB64.length > 0,
@@ -37,6 +41,7 @@ export function startupBanner(): string {
   return [
     `Jagrik backend on :${env.port}`,
     `  Gemini  : ${flags.geminiEnabled ? `LIVE (${env.geminiModel})` : "demo fallback (no GEMINI_API_KEY)"}`,
+    `  Groq    : ${flags.groqEnabled ? `fallback ready (${env.groqModel})` : "off"}`,
     `  Email   : ${emailMode}`,
     `  Storage : ${flags.firestoreEnabled ? "Firestore (durable)" : "in-memory (resets on restart)"}`,
   ].join("\n");
