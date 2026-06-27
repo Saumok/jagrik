@@ -21,11 +21,10 @@
 - **Across restarts / Render sleep:** **data resets.** Render's free tier stops the instance after ~15 min idle; the next visit cold-starts a fresh process that **re-seeds the ~36 demo issues and loses any live-filed reports/PDFs/photos.**
 - This was a deliberate deferral: the spec (`Docs/05`, `Docs/07`) planned **Firestore**, but on the billing-enabled GCP project, which the no-billing constraint ruled out.
 
-**Recommendation — add Firestore (free, no card, Google-native).**
-Firestore's **Spark plan is free and does NOT require billing** (only Cloud Run/Maps did). It is the ideal fit: durable, real-time, and it adds Google-tech credit for the rubric. Plan:
-- Create a Firebase project (Spark, no card) → service-account creds in an env var.
-- Swap the three in-memory `Map`s for Firestore collections (`issues`, and Storage or base64 for media). The client/API shapes already match `Docs/05`, so **no UI changes** are needed.
-- Alternatives if Firebase is unwanted: Supabase / MongoDB Atlas / Neon — all free, no card.
+**UPDATE — Firestore now implemented and persistence proven.**
+Issues now read/write to **Firestore (Spark, free, no card, Google-native)** when `FIREBASE_SERVICE_ACCOUNT_B64` is set, auto-seeding the demo history once; in-memory fallback otherwise. **Verified durable:** filed a report (`KMC-DR-6055`), restarted the server process, and the report survived (issues stayed at 37; `GET /api/issues/<id>` → 200) — in-memory would have reset to 36 and 404'd. PDFs/photos remain in-memory (regenerable; Firebase Storage is a later upgrade). Set the same env var on Render to make the live site durable.
+
+**Email update — Render blocks outbound SMTP.** Live testing showed Gmail SMTP fails on Render (`ENETUNREACH` then `Connection timeout` — free tier blocks SMTP ports). Switched to **Resend HTTP API** (port 443, free, no card); set `RESEND_API_KEY` + `DEMO_INBOX` on Render for real email. Email is non-fatal regardless (reports always complete).
 
 ---
 
