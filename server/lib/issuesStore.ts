@@ -1,5 +1,6 @@
 import type { StoredIssue, IssueType, IssueStatus, Priority } from "../types.js";
 import { lookupAuthority, trackingId } from "./router.js";
+import { firestore } from "./firebase.js";
 
 // In-memory issues store: a seeded demo history + live filed reports. Mirrors
 // Docs/05 §3 (12-affected cluster, a recurring hotspot, ~35 issues over 90 days
@@ -117,24 +118,53 @@ function buildSeed(): StoredIssue[] {
   return list;
 }
 
-const issues = new Map<string, StoredIssue>(buildSeed().map((i) => [i.id, i]));
+// Backend: Firestore when configured (durable), else an in-memory Map.
+const COL = "issues";
+const memory = new Map<string, StoredIssue>();
+if (!firestore) for (const i of buildSeed()) memory.set(i.id, i);
 
-export function addIssue(issue: StoredIssue) {
-  issues.set(issue.id, issue);
+// Seed the demo history once if the store is empty (called at startup).
+export async function seedIfEmpty(): Promise<void> {
+  if (!firestore) return; // memory is seeded synchronously above
+  const snap = await firestore.collection(COL).limit(1).get();
+  if (!snap.empty) return;
+  const batch = firestore.batch();
+  for (const i of buildSeed()) batch.set(firestore.collection(COL).doc(i.id), i);
+  await batch.commit();
+  console.log("[firestore] seeded demo issues");
 }
 
-export function getIssue(id: string): StoredIssue | undefined {
-  return issues.get(id);
+export async function addIssue(issue: StoredIssue): Promise<void> {
+  if (firestore) await firestore.collection(COL).doc(issue.id).set(issue);
+  else memory.set(issue.id, issue);
 }
 
-export function updateIssue(id: string, patch: Partial<StoredIssue>): StoredIssue | undefined {
-  const cur = issues.get(id);
+export async function getIssue(id: string): Promise<StoredIssue | undefined> {
+  if (firestore) {
+    const d = await firestore.collection(COL).doc(id).get();
+    return d.exists ? (d.data() as StoredIssue) : undefined;
+  }
+  return memory.get(id);
+}
+
+export async function updateIssue(id: string, patch: Partial<StoredIssue>): Promise<StoredIssue | undefined> {
+  if (firestore) {
+    const ref = firestore.collection(COL).doc(id);
+    if (!(await ref.get()).exists) return undefined;
+    await ref.set(patch, { merge: true });
+    return (await ref.get()).data() as StoredIssue;
+  }
+  const cur = memory.get(id);
   if (!cur) return undefined;
   const next = { ...cur, ...patch };
-  issues.set(id, next);
+  memory.set(id, next);
   return next;
 }
 
-export function listIssues(): StoredIssue[] {
-  return [...issues.values()].sort((a, b) => b.createdAt - a.createdAt);
+export async function listIssues(): Promise<StoredIssue[]> {
+  if (firestore) {
+    const snap = await firestore.collection(COL).orderBy("createdAt", "desc").get();
+    return snap.docs.map((d) => d.data() as StoredIssue);
+  }
+  return [...memory.values()].sort((a, b) => b.createdAt - a.createdAt);
 }

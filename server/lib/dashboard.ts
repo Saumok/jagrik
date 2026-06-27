@@ -25,7 +25,7 @@ export interface DashboardData {
 }
 
 export async function computeDashboard(): Promise<DashboardData> {
-  const issues = listIssues();
+  const issues = await listIssues();
   const total = issues.length;
   const resolvedIssues = issues.filter((i) => i.status === "resolved");
   const resolved = resolvedIssues.length;

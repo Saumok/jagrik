@@ -27,3 +27,11 @@ services:
         sync: false
       - key: DEMO_INBOX
         sync: false
+      # Real email on Render (SMTP is blocked here) — Resend HTTP API
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM
+        value: Jagrik <onboarding@resend.dev>
+      # Durable storage — base64 of the Firebase service-account JSON
+      - key: FIREBASE_SERVICE_ACCOUNT_B64
+        sync: false

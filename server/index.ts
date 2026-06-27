@@ -7,7 +7,7 @@ import fs from "node:fs";
 import { env, flags, startupBanner } from "./env.js";
 import { runReport } from "./orchestrator.js";
 import { getPdf, getPhoto, putPhoto } from "./lib/store.js";
-import { listIssues, getIssue, updateIssue } from "./lib/issuesStore.js";
+import { listIssues, getIssue, updateIssue, seedIfEmpty } from "./lib/issuesStore.js";
 import { verifyFix, type Media } from "./lib/gemini.js";
 import { computeDashboard } from "./lib/dashboard.js";
 import { randomUUID } from "node:crypto";
@@ -88,9 +88,11 @@ app.get("/api/photo/:id", (req, res) => {
 });
 
 // Issues for the map list + detail page.
-app.get("/api/issues", (_req, res) => res.json({ issues: listIssues() }));
-app.get("/api/issues/:id", (req, res) => {
-  const issue = getIssue(req.params.id);
+app.get("/api/issues", async (_req, res) => {
+  res.json({ issues: await listIssues() });
+});
+app.get("/api/issues/:id", async (req, res) => {
+  const issue = await getIssue(req.params.id);
   if (!issue) return res.status(404).json({ error: "not found" });
   res.json({ issue });
 });
@@ -109,7 +111,7 @@ app.get("/api/dashboard", async (_req, res) => {
 // "after" photo and, if fixed, flips the issue to resolved.
 app.post("/api/verify", upload.single("after"), async (req, res) => {
   try {
-    const issue = getIssue(req.body?.issueId);
+    const issue = await getIssue(req.body?.issueId);
     if (!issue) return res.status(404).json({ error: "issue not found" });
     const afterFile = req.file;
     if (!afterFile) return res.status(400).json({ error: "after photo required" });
@@ -142,7 +144,7 @@ app.post("/api/verify", upload.single("after"), async (req, res) => {
       patch.status = "resolved";
       patch.statusHistory = [...issue.statusHistory, { status: "resolved", at: Date.now(), by: "verification" }];
     }
-    const updated = updateIssue(issue.id, patch);
+    const updated = await updateIssue(issue.id, patch);
     res.json({ verdict, issue: updated });
   } catch (err) {
     console.error("[verify] error:", err);
@@ -157,6 +159,9 @@ if (fs.existsSync(distDir)) {
   app.use(express.static(distDir));
   app.get(/^(?!\/api).*/, (_req, res) => res.sendFile(path.join(distDir, "index.html")));
 }
+
+// Seed durable storage once (no-op for in-memory), then start.
+seedIfEmpty().catch((e) => console.error("[startup] seed failed:", e));
 
 app.listen(env.port, () => {
   console.log("\n" + startupBanner() + "\n");

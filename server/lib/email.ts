@@ -49,10 +49,37 @@ export interface MailResult {
   error?: string; // set when a real send was attempted but failed
 }
 
+// Resend HTTP API — works on hosts that block outbound SMTP (e.g. Render free).
+async function sendViaResend(input: MailInput, to: string): Promise<MailResult> {
+  const attachments: { filename: string; content: string }[] = [];
+  if (input.pdf) attachments.push({ filename: input.pdf.filename, content: input.pdf.content.toString("base64") });
+  if (input.photo) attachments.push({ filename: input.photo.filename, content: input.photo.content.toString("base64") });
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${env.resendApiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ from: env.resendFrom, to, subject: input.subject, text: input.text, attachments }),
+    });
+    if (!res.ok) {
+      const t = await res.text();
+      console.error("[email] resend failed:", res.status, t.slice(0, 160));
+      return { messageId: `failed-${Date.now()}`, simulated: true, to, error: `Resend ${res.status}: ${t.slice(0, 100)}` };
+    }
+    const j = (await res.json()) as { id?: string };
+    return { messageId: j.id || "resend", simulated: false, to };
+  } catch (err) {
+    return { messageId: `failed-${Date.now()}`, simulated: true, to, error: (err as Error).message };
+  }
+}
+
 export async function sendComplaint(input: MailInput): Promise<MailResult> {
   // Always route to the controlled demo inbox if one is set — never real
   // municipal staff during testing (Docs/00, Docs/07 §5).
   const to = env.demoInbox || input.to;
+
+  // Prefer Resend (HTTP) when configured — reliable on SMTP-blocked hosts.
+  if (env.resendApiKey) return sendViaResend(input, to);
+
   const t = await getTransporter();
 
   if (!t) {

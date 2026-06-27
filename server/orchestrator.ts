@@ -173,7 +173,7 @@ export async function runReport(
     photoId,
     emailDispatched: !mail.simulated,
   };
-  addIssue(stored);
+  await addIssue(stored);
 
   const issue: ResultIssue = {
     id: issueId,
