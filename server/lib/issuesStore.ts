@@ -68,7 +68,7 @@ function makeIssue(
 
   return {
     id,
-    trackingId: trackingId(auth.id),
+    trackingId: trackingId(auth.short, type),
     createdAt,
     source: rnd() > 0.5 ? "photo" : "voice",
     issueType: type,

@@ -57,6 +57,9 @@ export function IssuesView() {
           <Logo />
         </Link>
         <div className="flex items-center gap-3">
+          <Link to="/community" className="hidden rounded-full px-4 py-2 text-[0.95rem] text-muted hover:text-ink sm:inline-flex">
+            Community
+          </Link>
           <Link to="/dashboard" className="hidden rounded-full px-4 py-2 text-[0.95rem] text-muted hover:text-ink sm:inline-flex">
             Dashboard
           </Link>

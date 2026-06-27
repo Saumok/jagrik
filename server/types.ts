@@ -24,7 +24,9 @@ export interface Classification {
 
 export interface Authority {
   id: string;
+  short: string;
   name: string;
+  municipalName?: string;
   handles: IssueType[];
   email: string;
   escalationParentId?: string;
@@ -39,6 +41,40 @@ export interface ReportRequest {
   lng?: number;
   area?: string;
   ward?: number;
+}
+
+// ---- Community Hub (the social space) ----
+export type PostType = "announcement" | "help" | "alert" | "poll" | "general";
+
+export interface PollOption {
+  text: string;
+  votes: number;
+  votedBy: string[];
+}
+
+export interface Post {
+  id: string;
+  createdAt: number;
+  authorId: string;
+  authorHandle: string;
+  type: PostType;
+  title?: string;
+  body: string;
+  area: string;
+  upvotes: number;
+  upvotedBy: string[];
+  commentCount: number;
+  pollOptions?: PollOption[];
+  isDemoSeed?: boolean;
+}
+
+export interface Comment {
+  id: string;
+  postId: string;
+  createdAt: number;
+  authorId: string;
+  authorHandle: string;
+  body: string;
 }
 
 // NDJSON events streamed from POST /api/report.

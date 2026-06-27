@@ -4,7 +4,7 @@ import { classifyIssue, draftComplaint, type Media } from "./lib/gemini.js";
 import { lookupAuthority, computePriority, slaDays, trackingId } from "./lib/router.js";
 import { buildComplaintPdf } from "./lib/pdf.js";
 import { sendComplaint } from "./lib/email.js";
-import { reverseGeocode } from "./lib/geocode.js";
+import { geocode } from "./lib/geocode.js";
 import { transcribeAudio } from "./lib/transcribe.js";
 import { putPdf, putPhoto } from "./lib/store.js";
 import { addIssue } from "./lib/issuesStore.js";
@@ -29,7 +29,12 @@ export async function runReport(
   // Prefer the real area: client-provided (already geocoded) → reverse-geocode
   // the coords → a neutral fallback. No more hardcoded location for every report.
   let area = req.area;
-  if (!area && req.lat != null && req.lng != null) area = await reverseGeocode(req.lat, req.lng);
+  let city: string | undefined;
+  if (req.lat != null && req.lng != null) {
+    const g = await geocode(req.lat, req.lng);
+    area = area ?? g.area;
+    city = g.city;
+  }
   area = area ?? "Kolkata";
 
   // Best transcript: client-provided → ElevenLabs Scribe on the audio.
@@ -64,9 +69,9 @@ export async function runReport(
 
   // ---- 3. ROUTER (deterministic tool the Router agent calls) ----
   emit({ type: "step", agent: "router", label: "Finding the right authority", state: "running" });
-  const authority = lookupAuthority(c.issueType);
+  const authority = lookupAuthority(c.issueType, city);
   const priority = computePriority(c);
-  const tid = trackingId(authority.id);
+  const tid = trackingId(authority.short, c.issueType);
   await delay(400);
   emit({ type: "step", agent: "router", label: "Found the right authority", detail: `${authority.name} · priority ${priority.toUpperCase()}`, state: "done" });
   await delay(200);

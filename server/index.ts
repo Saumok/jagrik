@@ -11,6 +11,16 @@ import { listIssues, getIssue, updateIssue, seedIfEmpty } from "./lib/issuesStor
 import { verifyFix, type Media } from "./lib/gemini.js";
 import { computeDashboard } from "./lib/dashboard.js";
 import { reverseGeocode } from "./lib/geocode.js";
+import {
+  listPosts,
+  getPost,
+  createPost,
+  toggleUpvote,
+  votePoll,
+  listComments,
+  addComment,
+  seedCommunityIfEmpty,
+} from "./lib/community.js";
 import { randomUUID } from "node:crypto";
 import type { ReportRequest, RunEvent } from "./types.js";
 
@@ -106,6 +116,46 @@ app.get("/api/issues/:id", async (req, res) => {
   res.json({ issue });
 });
 
+// ---- Community Hub ----
+app.get("/api/community", async (req, res) => {
+  res.json({ posts: await listPosts(typeof req.query.type === "string" ? req.query.type : undefined) });
+});
+app.post("/api/community", async (req, res) => {
+  const b = req.body ?? {};
+  if (!b.authorId || !b.body || !b.type) return res.status(400).json({ error: "authorId, type, body required" });
+  const post = await createPost({
+    authorId: b.authorId,
+    authorHandle: b.authorHandle || "Anonymous citizen",
+    type: b.type,
+    title: b.title,
+    body: b.body,
+    area: b.area,
+    pollOptions: Array.isArray(b.pollOptions) ? b.pollOptions : undefined,
+  });
+  res.json({ post });
+});
+app.post("/api/community/:id/upvote", async (req, res) => {
+  const post = await toggleUpvote(req.params.id, req.body?.userId || "anon");
+  if (!post) return res.status(404).json({ error: "not found" });
+  res.json({ post });
+});
+app.post("/api/community/:id/poll", async (req, res) => {
+  const post = await votePoll(req.params.id, req.body?.userId || "anon", Number(req.body?.optionIndex));
+  if (!post) return res.status(404).json({ error: "not found" });
+  res.json({ post });
+});
+app.get("/api/community/:id/comments", async (req, res) => {
+  if (!(await getPost(req.params.id))) return res.status(404).json({ error: "not found" });
+  res.json({ comments: await listComments(req.params.id) });
+});
+app.post("/api/community/:id/comments", async (req, res) => {
+  const b = req.body ?? {};
+  if (!b.body) return res.status(400).json({ error: "body required" });
+  const comment = await addComment(req.params.id, b.authorId || "anon", b.authorHandle || "Anonymous citizen", b.body);
+  if (!comment) return res.status(404).json({ error: "post not found" });
+  res.json({ comment });
+});
+
 // Predictive hotspot dashboard (F9).
 app.get("/api/dashboard", async (_req, res) => {
   try {
@@ -171,6 +221,7 @@ if (fs.existsSync(distDir)) {
 
 // Seed durable storage once (no-op for in-memory), then start.
 seedIfEmpty().catch((e) => console.error("[startup] seed failed:", e));
+seedCommunityIfEmpty().catch((e) => console.error("[startup] community seed failed:", e));
 
 app.listen(env.port, () => {
   console.log("\n" + startupBanner() + "\n");

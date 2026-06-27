@@ -19,6 +19,7 @@ import { ReportFlow } from "@/features/report/ReportFlow";
 import { IssuesView } from "@/features/app/IssuesView";
 import { IssueDetail } from "@/features/issue/IssueDetail";
 import { Dashboard } from "@/features/dashboard/Dashboard";
+import { Community } from "@/features/community/Community";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -29,6 +30,7 @@ createRoot(document.getElementById("root")!).render(
         <Route path="/app" element={<IssuesView />} />
         <Route path="/issue/:id" element={<IssueDetail />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/community" element={<Community />} />
         <Route path="*" element={<Hero />} />
       </Routes>
     </BrowserRouter>
