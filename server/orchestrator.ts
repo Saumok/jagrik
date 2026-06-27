@@ -111,12 +111,22 @@ export async function runReport(
     photo: media.image ? { filename: "evidence.jpg", content: media.image.buf } : undefined,
   });
   const stamp = new Date().toLocaleTimeString("en-IN", { hour12: false });
+  const emailLabel = mail.error
+    ? "Couldn't send the email — queued for retry"
+    : mail.simulated
+      ? "Email prepared (add Gmail creds to send for real)"
+      : "Sent a real email to the department";
+  const emailDetail = mail.error
+    ? `Delivery error, will retry: ${mail.error.slice(0, 80)}`
+    : mail.simulated
+      ? `Would deliver to ${mail.to}`
+      : "Delivered with photo + PDF attached";
   emit({
     type: "step",
     agent: "dispatcher",
-    label: mail.simulated ? "Email prepared (add Gmail creds to send for real)" : "Sent a real email to the department",
-    detail: mail.simulated ? `Would deliver to ${mail.to}` : "Delivered with photo + PDF attached",
-    state: "done",
+    label: emailLabel,
+    detail: emailDetail,
+    state: mail.error ? "error" : "done",
     checkpoint: { kind: "email", value: `${mail.to} · ${stamp}` },
   });
   await delay(200);
