@@ -4,6 +4,8 @@ import { classifyIssue, draftComplaint, type Media } from "./lib/gemini.js";
 import { lookupAuthority, computePriority, slaDays, trackingId } from "./lib/router.js";
 import { buildComplaintPdf } from "./lib/pdf.js";
 import { sendComplaint } from "./lib/email.js";
+import { reverseGeocode } from "./lib/geocode.js";
+import { transcribeAudio } from "./lib/transcribe.js";
 import { putPdf, putPhoto } from "./lib/store.js";
 import { addIssue } from "./lib/issuesStore.js";
 import type { ReportRequest, RunEvent, ResultIssue, StoredIssue } from "./types.js";
@@ -24,21 +26,31 @@ export async function runReport(
   media: { image?: Media; audio?: Media },
   emit: Emit,
 ): Promise<ResultIssue> {
-  const area = req.area ?? "Garia Main Road, Ward 110";
+  // Prefer the real area: client-provided (already geocoded) → reverse-geocode
+  // the coords → a neutral fallback. No more hardcoded location for every report.
+  let area = req.area;
+  if (!area && req.lat != null && req.lng != null) area = await reverseGeocode(req.lat, req.lng);
+  area = area ?? "Kolkata";
+
+  // Best transcript: client-provided → ElevenLabs Scribe on the audio.
+  let transcript = req.transcript;
+  if (!transcript && media.audio) transcript = await transcribeAudio(media.audio.buf, media.audio.mime);
 
   // ---- 1. CLASSIFIER (multimodal) ----
-  emit({ type: "step", agent: "classifier", label: media.audio || req.transcript ? "Understanding what you said" : "Reading your photo", state: "running" });
+  emit({ type: "step", agent: "classifier", label: media.audio || transcript ? "Understanding what you said" : "Reading your photo", state: "running" });
   const c = await classifyIssue({
     image: media.image,
     audio: media.audio,
     note: req.note,
-    transcript: req.transcript,
+    transcript,
     area,
   });
+  // prefer the dedicated STT transcript over the model's own
+  const finalTranscript = transcript || c.transcript;
   emit({
     type: "step",
     agent: "classifier",
-    label: media.audio || req.transcript ? "Understood what you said" : "Read your photo",
+    label: media.audio || finalTranscript ? "Understood what you said" : "Read your photo",
     detail: `${c.issueType} · severity ${c.severity}/5 · est. ${inr(c.estimatedRepairCost.minInr)}–${inr(c.estimatedRepairCost.maxInr)}${c.riskContext ? ` · ${c.riskContext}` : ""}`,
     state: "done",
   });
@@ -71,10 +83,10 @@ export async function runReport(
     risk: c.riskContext,
     trackingId: tid,
     slaHours: slaH,
-    transcript: c.transcript || req.transcript,
+    transcript: finalTranscript,
     lang: c.transcriptLang,
   });
-  emit({ type: "step", agent: "drafter", label: "Wrote your formal complaint", detail: c.transcript || req.transcript ? "Formal English complaint drafted, your words attached" : "Formal English complaint drafted", state: "done" });
+  emit({ type: "step", agent: "drafter", label: "Wrote your formal complaint", detail: finalTranscript ? "Formal English complaint drafted, your words attached" : "Formal English complaint drafted", state: "done" });
   await delay(200);
 
   // ---- 5. DISPATCHER (the real-action agent) ----
@@ -93,7 +105,7 @@ export async function runReport(
     risk: c.riskContext,
     subject: draft.subject,
     body: draft.body,
-    transcript: c.transcript || req.transcript,
+    transcript: finalTranscript,
     transcriptLang: c.transcriptLang,
     photo: media.image?.buf,
   });
@@ -160,7 +172,7 @@ export async function runReport(
     routedDepartment: authority.name,
     authorityId: authority.id,
     priority,
-    audioTranscript: c.transcript || req.transcript,
+    audioTranscript: finalTranscript,
     audioLang: c.transcriptLang,
     area,
     lat: req.lat,
@@ -186,7 +198,7 @@ export async function runReport(
     routedDepartment: authority.name,
     authorityId: authority.id,
     priority,
-    audioTranscript: c.transcript || req.transcript,
+    audioTranscript: finalTranscript,
     audioLang: c.transcriptLang,
     area,
     complaintPdfId: pdfId,

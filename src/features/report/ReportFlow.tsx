@@ -23,8 +23,6 @@ import type { AgentStep, Issue } from "@/data/types";
 type Mode = "voice" | "photo";
 type Phase = "intake" | "running" | "done";
 
-const AREA = "Garia Main Road, Ward 110";
-
 const MODE_TABS: TabItem[] = [
   { id: "voice", label: "Speak", icon: <Microphone size={17} weight="fill" /> },
   { id: "photo", label: "Photo", icon: <Camera size={17} weight="fill" /> },
@@ -55,15 +53,28 @@ export function ReportFlow() {
   const [steps, setSteps] = useState<AgentStep[]>([]);
   const [result, setResult] = useState<ResultView | null>(null);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [area, setArea] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const abort = useRef<AbortController | null>(null);
 
-  // best-effort device location (never blocks reporting — Docs/03 §3)
+  // device location → reverse-geocoded area name (never blocks reporting; Docs/03 §3)
   useEffect(() => {
     navigator.geolocation?.getCurrentPosition(
-      (p) => setCoords({ lat: p.coords.latitude, lng: p.coords.longitude }),
+      async (p) => {
+        const c = { lat: p.coords.latitude, lng: p.coords.longitude };
+        setCoords(c);
+        try {
+          const r = await fetch(`/api/geocode?lat=${c.lat}&lng=${c.lng}`);
+          if (r.ok) {
+            const d = (await r.json()) as { area: string | null };
+            if (d.area) setArea(d.area);
+          }
+        } catch {
+          /* keep coords-only */
+        }
+      },
       () => {},
-      { timeout: 4000 },
+      { timeout: 8000, enableHighAccuracy: true },
     );
     return () => abort.current?.abort();
   }, []);
@@ -91,8 +102,7 @@ export function ReportFlow() {
           transcript: mode === "voice" ? voice?.transcript : undefined,
           audioBlob: mode === "voice" ? voice?.audioBlob : undefined,
           imageFile: mode === "photo" ? photoFile ?? undefined : undefined,
-          area: AREA,
-          ward: 110,
+          area: area ?? undefined,
           lat: coords?.lat,
           lng: coords?.lng,
         },
@@ -155,8 +165,8 @@ export function ReportFlow() {
 
                 <div className="glass glass-edge mt-6 inline-flex items-center gap-2 rounded-full px-4 py-2 text-[0.9rem] text-text">
                   <MapPin size={16} weight="fill" className="text-teal" />
-                  {AREA}
-                  {coords && <span className="text-faint">· located</span>}
+                  {area ?? (coords ? "Locating your area…" : "Turn on location to pin this report")}
+                  {area && <span className="text-faint">· located</span>}
                 </div>
 
                 <LiquidTabs

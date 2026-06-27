@@ -10,6 +10,7 @@ import { getPdf, getPhoto, putPhoto } from "./lib/store.js";
 import { listIssues, getIssue, updateIssue, seedIfEmpty } from "./lib/issuesStore.js";
 import { verifyFix, type Media } from "./lib/gemini.js";
 import { computeDashboard } from "./lib/dashboard.js";
+import { reverseGeocode } from "./lib/geocode.js";
 import { randomUUID } from "node:crypto";
 import type { ReportRequest, RunEvent } from "./types.js";
 
@@ -22,6 +23,14 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 *
 
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true, gemini: flags.geminiEnabled, email: flags.emailEnabled, model: env.geminiModel });
+});
+
+// Reverse-geocode device coords → real area name (for the intake location chip).
+app.get("/api/geocode", async (req, res) => {
+  const lat = Number(req.query.lat);
+  const lng = Number(req.query.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return res.status(400).json({ error: "lat/lng required" });
+  res.json({ area: (await reverseGeocode(lat, lng)) ?? null });
 });
 
 // The orchestrator endpoint. Streams NDJSON: one JSON object per line, flushed
