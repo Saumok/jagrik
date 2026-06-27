@@ -1,23 +1,33 @@
-import dns from "node:dns";
+import dns from "node:dns/promises";
 import nodemailer from "nodemailer";
 import { env, flags } from "../env.js";
 
 // Render's free tier has no outbound IPv6; smtp.gmail.com resolves to IPv6
-// first → ENETUNREACH. Prefer IPv4 so the SMTP connection succeeds.
-dns.setDefaultResultOrder("ipv4first");
+// first → ENETUNREACH. We resolve the IPv4 address ourselves and connect to it
+// directly (with TLS servername for cert validation) so IPv6 is never attempted.
 
 // Real email dispatch (Docs/07 §5) via Nodemailer + a Gmail app-password.
 // The actual, observable action that earns the 20% Agentic Depth. When creds
 // are absent it returns a clearly-marked simulated id so the flow still runs.
 
 let transporter: nodemailer.Transporter | null = null;
-function getTransporter() {
+async function getTransporter() {
   if (!flags.emailEnabled) return null;
   if (!transporter) {
+    // resolve Gmail's IPv4 and connect to the literal IP (servername keeps the
+    // TLS cert valid) — guarantees no IPv6 attempt on hosts without IPv6 egress.
+    let host = "smtp.gmail.com";
+    try {
+      const { address } = await dns.lookup("smtp.gmail.com", { family: 4 });
+      host = address;
+    } catch {
+      /* fall back to hostname */
+    }
     transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
+      host,
       port: 465,
       secure: true,
+      tls: { servername: "smtp.gmail.com" },
       auth: { user: env.gmailUser, pass: env.gmailAppPassword },
     });
   }
@@ -43,7 +53,7 @@ export async function sendComplaint(input: MailInput): Promise<MailResult> {
   // Always route to the controlled demo inbox if one is set — never real
   // municipal staff during testing (Docs/00, Docs/07 §5).
   const to = env.demoInbox || input.to;
-  const t = getTransporter();
+  const t = await getTransporter();
 
   if (!t) {
     return { messageId: `simulated-${Date.now()}`, simulated: true, to };
