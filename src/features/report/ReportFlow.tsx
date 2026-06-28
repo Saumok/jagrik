@@ -16,9 +16,10 @@ import { GlassButton } from "@/components/GlassButton";
 import { LiquidTabs, type TabItem } from "@/components/LiquidTabs";
 import { WarRoom } from "./WarRoom";
 import { VoiceCapture, type VoiceResult } from "./VoiceCapture";
+import { TranscriptCard } from "./TranscriptCard";
 import { streamReport, type ResultView, type ScoreEvent } from "@/lib/reportApi";
 import { buildRun, playRun, SAMPLE_BENGALI } from "@/data/agentPipeline";
-import { getIdentity } from "@/lib/identity";
+import { getIdentity, setHandle } from "@/lib/identity";
 import type { AgentStep, Issue } from "@/data/types";
 
 type Mode = "voice" | "photo";
@@ -56,6 +57,8 @@ export function ReportFlow() {
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [area, setArea] = useState<string | null>(null);
   const [score, setScore] = useState<ScoreEvent | null>(null);
+  const [name, setName] = useState(() => getIdentity().handle);
+  const [voiceText, setVoiceText] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
   const abort = useRef<AbortController | null>(null);
 
@@ -81,7 +84,9 @@ export function ReportFlow() {
     return () => abort.current?.abort();
   }, []);
 
-  const ready = mode === "voice" ? !!voice : !!photoFile;
+  const namedOk = name.trim().length >= 2;
+  const captureOk = mode === "voice" ? !!voice && !!voiceText.trim() : !!photoFile;
+  const ready = namedOk && captureOk;
 
   function onPickPhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
@@ -90,8 +95,14 @@ export function ReportFlow() {
     setPhotoUrl(URL.createObjectURL(f));
   }
 
+  function reRecord() {
+    setVoice(null);
+    setVoiceText("");
+  }
+
   async function fileReport() {
     if (!ready) return;
+    setHandle(name.trim()); // remember the citizen's chosen name
     setSteps([]);
     setResult(null);
     setScore(null);
@@ -103,14 +114,14 @@ export function ReportFlow() {
       await streamReport(
         {
           source: mode,
-          transcript: mode === "voice" ? voice?.transcript : undefined,
+          transcript: mode === "voice" ? voiceText.trim() || voice?.transcript : undefined,
           audioBlob: mode === "voice" ? voice?.audioBlob : undefined,
           imageFile: mode === "photo" ? photoFile ?? undefined : undefined,
           area: area ?? undefined,
           lat: coords?.lat,
           lng: coords?.lng,
           reporterId: me.id,
-          reporterHandle: me.handle,
+          reporterHandle: name.trim(),
         },
         { onSteps: setSteps, onResult: setResult, onScore: setScore },
         abort.current.signal,
@@ -175,6 +186,24 @@ export function ReportFlow() {
                   {area && <span className="text-faint">· located</span>}
                 </div>
 
+                {/* Your name — taken once, then remembered. No random handles. */}
+                <div className="mt-5">
+                  <label htmlFor="reporter-name" className="mb-1.5 block text-[0.85rem] font-medium text-muted">
+                    Your name
+                  </label>
+                  <input
+                    id="reporter-name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g. Ananya Sen"
+                    autoComplete="name"
+                    className="w-full rounded-[14px] border border-nude-200 bg-white/60 px-4 py-3 text-[1rem] text-ink placeholder:text-faint focus:border-teal/50 focus:outline-none"
+                  />
+                  <p className="mt-1 text-[0.78rem] text-faint">
+                    Shown on your report and the community — so neighbours know who's acting.
+                  </p>
+                </div>
+
                 <LiquidTabs
                   tabs={MODE_TABS}
                   active={mode === "voice" ? 0 : 1}
@@ -185,7 +214,17 @@ export function ReportFlow() {
 
                 <div className="mt-5">
                   {mode === "voice" ? (
-                    <VoiceCapture onCaptured={setVoice} captured={voice} />
+                    <>
+                      <VoiceCapture onCaptured={setVoice} captured={voice} />
+                      {voice && (
+                        <TranscriptCard
+                          audioBlob={voice.audioBlob}
+                          initial={voice.transcript}
+                          onChange={setVoiceText}
+                          onReRecord={reRecord}
+                        />
+                      )}
+                    </>
                   ) : (
                     <>
                       <input

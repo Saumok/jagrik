@@ -1,17 +1,12 @@
-// A stable anonymous identity per device (localStorage). Gives every citizen a
-// friendly handle for the community space without a login wall.
+// A stable per-device identity (localStorage). The id is anonymous; the citizen
+// picks their own display name (no random handles) — we ask for it before the
+// first report. There's no login wall, just a name.
 export interface Identity {
   id: string;
-  handle: string;
+  handle: string; // "" until the citizen sets their name
 }
 
 const KEY = "jagrik_identity";
-const FIRST = ["Riya", "Ashok", "Priya", "Sourav", "Ankit", "Meera", "Rahul", "Nadia", "Arjun", "Sneha", "Dev", "Ira"];
-const LAST = ["S.", "D.", "M.", "R.", "K.", "B.", "C.", "G."];
-
-function rand<T>(a: T[]): T {
-  return a[Math.floor(Math.random() * a.length)];
-}
 
 export function getIdentity(): Identity {
   try {
@@ -22,7 +17,7 @@ export function getIdentity(): Identity {
   }
   const ident: Identity = {
     id: "u-" + Math.random().toString(36).slice(2, 10),
-    handle: `${rand(FIRST)} ${rand(LAST)}`,
+    handle: "",
   };
   try {
     localStorage.setItem(KEY, JSON.stringify(ident));
@@ -30,6 +25,16 @@ export function getIdentity(): Identity {
     /* ignore */
   }
   return ident;
+}
+
+// Has the citizen given us a real name yet?
+export function hasName(): boolean {
+  return getIdentity().handle.trim().length > 0;
+}
+
+// Safe display name for UI (handles the unnamed case).
+export function displayName(handle: string | undefined): string {
+  return handle && handle.trim() ? handle : "Anonymous citizen";
 }
 
 export function setHandle(handle: string): Identity {
@@ -44,9 +49,11 @@ export function setHandle(handle: string): Identity {
 }
 
 export function initials(handle: string): string {
-  return handle
+  const out = (handle || "")
+    .trim()
     .split(/\s+/)
     .map((w) => w[0]?.toUpperCase() ?? "")
     .join("")
     .slice(0, 2);
+  return out || "·";
 }

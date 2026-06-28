@@ -296,3 +296,43 @@ export async function draftComplaint(
   // Tier 3: deterministic
   return fallbackDraft(ctx);
 }
+
+const LANG_NAME: Record<string, string> = { en: "English", hi: "Hindi", bn: "Bengali" };
+
+// Translate a transcript into a target language for the pre-file preview.
+// Gemini → Groq → returns the original unchanged (so the UI never breaks).
+export async function translateText(text: string, target: "en" | "hi" | "bn"): Promise<string> {
+  const langName = LANG_NAME[target] ?? "English";
+  const prompt = `Translate the following text into ${langName}. Preserve the meaning and tone. Respond with ONLY the translation, no quotes, no notes.\n\nText: ${text}`;
+
+  if (ai) {
+    try {
+      const res = await ai.models.generateContent({
+        model: env.geminiModel,
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        config: { temperature: 0.2 },
+      });
+      const out = (res.text ?? "").trim();
+      if (out) return out;
+    } catch (err) {
+      console.error("[gemini] translate failed:", (err as Error).message);
+    }
+  }
+  if (flags.groqEnabled) {
+    try {
+      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${env.groqApiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ model: env.groqModel, temperature: 0.2, messages: [{ role: "user", content: prompt }] }),
+      });
+      if (res.ok) {
+        const j = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+        const out = (j.choices?.[0]?.message?.content ?? "").trim();
+        if (out) return out;
+      }
+    } catch (err) {
+      console.error("[groq] translate failed:", (err as Error).message);
+    }
+  }
+  return text; // no translator available → show the original
+}

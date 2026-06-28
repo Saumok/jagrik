@@ -21,7 +21,7 @@ import { AuroraBackground } from "@/components/AuroraBackground";
 import { ScoreChip } from "@/components/ScoreChip";
 import { BottomNav } from "@/components/BottomNav";
 import { BackButton } from "@/components/BackButton";
-import { getIdentity, initials } from "@/lib/identity";
+import { getIdentity, setHandle, initials } from "@/lib/identity";
 import {
   fetchPosts,
   createPost,
@@ -159,18 +159,22 @@ export function Community() {
 function Composer({ me, area, onPosted }: { me: { id: string; handle: string }; area: string | null; onPosted: (p: Post) => void }) {
   const [type, setType] = useState<PostType>("general");
   const [body, setBody] = useState("");
+  const [name, setName] = useState(me.handle);
   const [options, setOptions] = useState<string[]>(["", ""]);
   const [busy, setBusy] = useState(false);
 
   const types: PostType[] = ["general", "announcement", "help", "alert", "poll"];
+  const namedOk = name.trim().length >= 2;
 
   async function submit() {
-    if (!body.trim() || busy) return;
+    if (!body.trim() || !namedOk || busy) return;
     setBusy(true);
+    const handle = name.trim();
+    setHandle(handle);
     try {
       const post = await createPost({
         authorId: me.id,
-        authorHandle: me.handle,
+        authorHandle: handle,
         type,
         body: body.trim(),
         area: area ?? undefined,
@@ -238,9 +242,18 @@ function Composer({ me, area, onPosted }: { me: { id: string; handle: string }; 
         </div>
       )}
 
-      <div className="mt-3 flex items-center justify-between">
-        <span className="text-[0.82rem] text-faint">Posting as {me.handle}</span>
-        <GlassButton variant="primary" onClick={submit} className={`!min-h-[42px] !px-5 !text-[0.92rem] ${body.trim() ? "" : "pointer-events-none opacity-50"}`}>
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className="text-[0.82rem] text-faint">Posting as</span>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="your name"
+            aria-label="Your name"
+            className="w-32 rounded-full bg-nude-150/70 px-3 py-1.5 text-[0.85rem] text-ink placeholder:text-faint focus:outline-none"
+          />
+        </div>
+        <GlassButton variant="primary" onClick={submit} className={`!min-h-[42px] !px-5 !text-[0.92rem] ${body.trim() && namedOk ? "" : "pointer-events-none opacity-50"}`}>
           {busy ? "Posting…" : "Post"}
         </GlassButton>
       </div>

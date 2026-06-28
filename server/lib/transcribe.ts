@@ -25,3 +25,37 @@ export async function transcribeAudio(buf: Buffer, mime: string): Promise<string
     return undefined;
   }
 }
+
+export type TranscriptLang = "bn" | "hi" | "en" | null;
+
+// Like transcribeAudio but also returns the detected language (bn/hi/en), for
+// the pre-file transcript-verification UI.
+export async function transcribeWithLang(
+  buf: Buffer,
+  mime: string,
+): Promise<{ text: string; lang: TranscriptLang } | undefined> {
+  if (!flags.elevenLabsEnabled) return undefined;
+  try {
+    const fd = new FormData();
+    fd.set("model_id", "scribe_v1");
+    fd.set("file", new Blob([new Uint8Array(buf)], { type: mime || "audio/webm" }), "audio.webm");
+    const res = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
+      method: "POST",
+      headers: { "xi-api-key": env.elevenLabsApiKey },
+      body: fd,
+    });
+    if (!res.ok) {
+      console.error("[11labs] http", res.status, (await res.text()).slice(0, 160));
+      return undefined;
+    }
+    const j = (await res.json()) as { text?: string; language_code?: string };
+    const text = j.text?.trim();
+    if (!text) return undefined;
+    const code = (j.language_code || "").toLowerCase();
+    const lang: TranscriptLang = code.startsWith("ben") || code === "bn" ? "bn" : code.startsWith("hin") || code === "hi" ? "hi" : code.startsWith("eng") || code === "en" ? "en" : null;
+    return { text, lang };
+  } catch (err) {
+    console.error("[11labs] transcribe failed:", (err as Error).message);
+    return undefined;
+  }
+}

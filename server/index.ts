@@ -7,8 +7,9 @@ import fs from "node:fs";
 import { env, flags, startupBanner } from "./env.js";
 import { runReport } from "./orchestrator.js";
 import { getPdf, getPhoto, putPhoto } from "./lib/store.js";
-import { listIssues, getIssue, updateIssue, seedIfEmpty } from "./lib/issuesStore.js";
-import { verifyFix, type Media } from "./lib/gemini.js";
+import { listIssues, getIssue, updateIssue, deleteIssue, seedIfEmpty } from "./lib/issuesStore.js";
+import { verifyFix, translateText, type Media } from "./lib/gemini.js";
+import { transcribeWithLang } from "./lib/transcribe.js";
 import { computeDashboard } from "./lib/dashboard.js";
 import { reverseGeocode } from "./lib/geocode.js";
 import {
@@ -122,6 +123,34 @@ app.post(
   },
 );
 
+// Standalone transcription so the citizen can verify what was heard BEFORE
+// filing. Returns the text + detected language (bn/hi/en).
+app.post("/api/transcribe", upload.single("audio"), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: "audio required" });
+    const result = await transcribeWithLang(req.file.buffer, req.file.mimetype);
+    if (!result) return res.json({ transcript: null, lang: null });
+    res.json({ transcript: result.text, lang: result.lang });
+  } catch (err) {
+    console.error("[transcribe] error:", err);
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+// Translate a transcript so the citizen can read it in another language before filing.
+app.post("/api/translate", async (req, res) => {
+  const text = String(req.body?.text ?? "").trim();
+  const target = req.body?.target;
+  if (!text) return res.status(400).json({ error: "text required" });
+  if (!["en", "hi", "bn"].includes(target)) return res.status(400).json({ error: "target must be en|hi|bn" });
+  try {
+    res.json({ text: await translateText(text, target) });
+  } catch (err) {
+    console.error("[translate] error:", err);
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
 // Serve a generated complaint PDF.
 app.get("/api/pdf/:id", (req, res) => {
   const pdf = getPdf(req.params.id);
@@ -148,6 +177,18 @@ app.get("/api/issues/:id", async (req, res) => {
   const issue = await getIssue(req.params.id);
   if (!issue) return res.status(404).json({ error: "not found" });
   res.json({ issue });
+});
+// Delete a report. Only the citizen who filed it may delete it (device identity).
+app.delete("/api/issues/:id", async (req, res) => {
+  const issue = await getIssue(req.params.id);
+  if (!issue) return res.status(404).json({ error: "not found" });
+  if (issue.isDemoSeed) return res.status(403).json({ error: "demo issues can't be deleted" });
+  const reporterId = typeof req.query.reporterId === "string" ? req.query.reporterId : undefined;
+  if (issue.reporterId && issue.reporterId !== reporterId) {
+    return res.status(403).json({ error: "only the reporter can delete this report" });
+  }
+  const ok = await deleteIssue(req.params.id);
+  res.json({ ok });
 });
 
 // ---- Community Hub ----

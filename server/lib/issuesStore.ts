@@ -198,6 +198,16 @@ export async function updateIssue(id: string, patch: Partial<StoredIssue>): Prom
   return next;
 }
 
+export async function deleteIssue(id: string): Promise<boolean> {
+  if (firestore) {
+    const ref = firestore.collection(COL).doc(id);
+    if (!(await ref.get()).exists) return false;
+    await ref.delete();
+    return true;
+  }
+  return memory.delete(id);
+}
+
 export async function listIssues(): Promise<StoredIssue[]> {
   if (firestore) {
     const snap = await firestore.collection(COL).orderBy("createdAt", "desc").get();

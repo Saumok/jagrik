@@ -36,6 +36,8 @@ export interface StoredIssue {
   afterPhotoUrl?: string;
   verification?: { fixed: boolean; confidence: number; reason: string; at: number };
   emailDispatched: boolean;
+  reporterId?: string;
+  reporterHandle?: string;
   isDemoSeed?: boolean;
 }
 
@@ -80,4 +82,12 @@ export async function fetchIssue(id: string, signal?: AbortSignal): Promise<Stor
   if (!res.ok) throw new Error(`issue ${res.status}`);
   const data = (await res.json()) as { issue: StoredIssue };
   return data.issue;
+}
+
+export async function deleteIssue(id: string, reporterId: string): Promise<void> {
+  const res = await fetch(`/api/issues/${id}?reporterId=${encodeURIComponent(reporterId)}`, { method: "DELETE" });
+  if (!res.ok) {
+    const msg = ((await res.json().catch(() => ({}))) as { error?: string }).error;
+    throw new Error(msg || `delete ${res.status}`);
+  }
 }

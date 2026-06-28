@@ -73,6 +73,29 @@ function makeReducer(onSteps: (s: AgentStep[]) => void) {
   };
 }
 
+export type Lang = "bn" | "hi" | "en";
+
+// Transcribe recorded audio so the citizen can verify it before filing.
+export async function transcribeAudio(blob: Blob, signal?: AbortSignal): Promise<{ transcript: string | null; lang: Lang | null }> {
+  const fd = new FormData();
+  fd.set("audio", blob, "audio.webm");
+  const res = await fetch("/api/transcribe", { method: "POST", body: fd, signal });
+  if (!res.ok) throw new Error(`transcribe ${res.status}`);
+  return (await res.json()) as { transcript: string | null; lang: Lang | null };
+}
+
+// Translate a transcript for the language toggle.
+export async function translateText(text: string, target: Lang, signal?: AbortSignal): Promise<string> {
+  const res = await fetch("/api/translate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text, target }),
+    signal,
+  });
+  if (!res.ok) throw new Error(`translate ${res.status}`);
+  return ((await res.json()) as { text: string }).text;
+}
+
 export async function streamReport(
   input: ReportInput,
   handlers: StreamHandlers,

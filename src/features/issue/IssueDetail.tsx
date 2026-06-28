@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Buildings,
@@ -12,12 +12,14 @@ import {
   Camera,
   SealCheck,
   CircleNotch,
+  Trash,
 } from "@phosphor-icons/react";
 import { Logo } from "@/components/Logo";
 import { AuroraBackground } from "@/components/AuroraBackground";
 import { BackButton } from "@/components/BackButton";
 import {
   fetchIssue,
+  deleteIssue,
   photoSrc,
   STATUS_LABEL,
   STATUS_VAR,
@@ -26,11 +28,13 @@ import {
   type IssueStatus,
 } from "@/lib/issuesApi";
 import { verifyFix, type Verdict } from "@/lib/verifyApi";
+import { getIdentity } from "@/lib/identity";
 
 const FLOW: IssueStatus[] = ["reported", "acknowledged", "in_progress", "resolved"];
 
 export function IssueDetail() {
   const { id = "" } = useParams();
+  const navigate = useNavigate();
   const [issue, setIssue] = useState<StoredIssue | null>(null);
   const [error, setError] = useState(false);
 
@@ -205,8 +209,65 @@ export function IssueDetail() {
                 })}
               </ol>
             </div>
+
+            {issue.reporterId && issue.reporterId === getIdentity().id && (
+              <DeleteReport id={issue.id} onDeleted={() => navigate("/app")} />
+            )}
           </div>
         </motion.div>
+      )}
+    </div>
+  );
+}
+
+function DeleteReport({ id, onDeleted }: { id: string; onDeleted: () => void }) {
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function remove() {
+    setBusy(true);
+    setErr(null);
+    try {
+      await deleteIssue(id, getIdentity().id);
+      onDeleted();
+    } catch (e) {
+      setErr((e as Error).message);
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="glass glass-edge rounded-[22px] p-5">
+      {!confirming ? (
+        <button
+          onClick={() => setConfirming(true)}
+          className="inline-flex items-center gap-2 text-[0.92rem] font-medium text-danger hover:opacity-80"
+        >
+          <Trash size={17} weight="bold" /> Delete this report
+        </button>
+      ) : (
+        <div>
+          <p className="text-[0.95rem] text-ink">Delete this report permanently? This can't be undone.</p>
+          <div className="mt-3 flex items-center gap-2.5">
+            <button
+              onClick={remove}
+              disabled={busy}
+              className="inline-flex items-center gap-2 rounded-full bg-danger px-4 py-2.5 text-[0.9rem] font-medium text-white disabled:opacity-60"
+            >
+              {busy ? <CircleNotch size={16} weight="bold" className="animate-spin" /> : <Trash size={16} weight="bold" />}
+              {busy ? "Deleting…" : "Yes, delete"}
+            </button>
+            <button
+              onClick={() => setConfirming(false)}
+              disabled={busy}
+              className="glass glass-edge rounded-full px-4 py-2.5 text-[0.9rem] text-text"
+            >
+              Cancel
+            </button>
+          </div>
+          {err && <p className="mt-2 text-[0.85rem] text-danger">{err}</p>}
+        </div>
       )}
     </div>
   );

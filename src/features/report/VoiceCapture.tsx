@@ -157,27 +157,6 @@ export function VoiceCapture({ onCaptured, captured }: Props) {
           </span>
         )}
       </button>
-
-      {captured && (
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="glass glass-edge rounded-[18px] px-5 py-4"
-        >
-          <div className="mb-1.5 font-mono text-[10.5px] uppercase tracking-[0.16em] text-faint">
-            {captured.transcript ? "You said" : "Voice recorded"}
-          </div>
-          {captured.transcript ? (
-            <p lang="bn" className="text-[1.15rem] leading-relaxed text-ink">
-              {captured.transcript}
-            </p>
-          ) : (
-            <p className="text-[0.95rem] text-muted">
-              Sending your audio to the agent to understand and transcribe.
-            </p>
-          )}
-        </motion.div>
-      )}
     </div>
   );
 }
