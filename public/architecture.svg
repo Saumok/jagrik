@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 560" width="1200" height="560" font-family="'Segoe UI', system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#faf4ec"/>
+      <stop offset="1" stop-color="#f0e3d4"/>
+    </linearGradient>
+    <marker id="arrow" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+      <path d="M0 0L6 3L0 6Z" fill="#9a8a79"/>
+    </marker>
+    <filter id="card" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="12" flood-color="#241b12" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="560" fill="url(#bg2)"/>
+
+  <text x="60" y="64" font-size="30" font-weight="700" fill="#241b12">How Jagrik works</text>
+  <text x="60" y="98" font-size="18" fill="#6f6052">A thin orchestrator coordinates specialist agents. Plain code coordinates; the intelligence lives in the agents.</text>
+
+  <!-- INPUT -->
+  <g filter="url(#card)">
+    <rect x="60" y="140" width="190" height="150" rx="20" fill="#ffffff" fill-opacity="0.7" stroke="#0f6e66" stroke-opacity="0.25"/>
+    <text x="80" y="176" font-size="14" font-weight="700" fill="#9a8a79" letter-spacing="1.5">CITIZEN</text>
+    <text x="80" y="212" font-size="19" font-weight="600" fill="#2a2018">📷 Photo</text>
+    <text x="80" y="244" font-size="19" font-weight="600" fill="#2a2018">🎙 Voice (any</text>
+    <text x="80" y="268" font-size="19" font-weight="600" fill="#2a2018">Indian language)</text>
+  </g>
+  <line x1="250" y1="215" x2="288" y2="215" stroke="#9a8a79" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- AI CORE -->
+  <g filter="url(#card)">
+    <rect x="292" y="128" width="616" height="300" rx="24" fill="#ffffff" fill-opacity="0.55" stroke="#0f6e66" stroke-opacity="0.3"/>
+    <text x="316" y="162" font-size="14" font-weight="700" fill="#0a4f49" letter-spacing="1.5">MULTI-AGENT PIPELINE</text>
+
+    <!-- agent chips, two rows -->
+    <g font-size="16" font-weight="600" fill="#2a2018">
+      <g transform="translate(316,186)">
+        <rect width="180" height="56" rx="14" fill="#0f6e66" fill-opacity="0.10"/>
+        <text x="16" y="26">① Classifier</text>
+        <text x="16" y="46" font-size="12.5" font-weight="500" fill="#6f6052">type · severity · cost</text>
+      </g>
+      <g transform="translate(512,186)">
+        <rect width="180" height="56" rx="14" fill="#0f6e66" fill-opacity="0.10"/>
+        <text x="16" y="26">② Dedupe</text>
+        <text x="16" y="46" font-size="12.5" font-weight="500" fill="#6f6052">geo cluster check</text>
+      </g>
+      <g transform="translate(708,186)">
+        <rect width="180" height="56" rx="14" fill="#0f6e66" fill-opacity="0.10"/>
+        <text x="16" y="26">③ Router</text>
+        <text x="16" y="46" font-size="12.5" font-weight="500" fill="#6f6052">→ right authority</text>
+      </g>
+
+      <g transform="translate(316,260)">
+        <rect width="180" height="56" rx="14" fill="#0f6e66" fill-opacity="0.10"/>
+        <text x="16" y="26">④ Drafter</text>
+        <text x="16" y="46" font-size="12.5" font-weight="500" fill="#6f6052">formal complaint</text>
+      </g>
+      <g transform="translate(512,260)">
+        <rect width="180" height="56" rx="14" fill="#e8923c" fill-opacity="0.14"/>
+        <text x="16" y="26">⑤ Dispatcher</text>
+        <text x="16" y="46" font-size="12.5" font-weight="500" fill="#6f6052">PDF + email, for real</text>
+      </g>
+      <g transform="translate(708,260)">
+        <rect width="180" height="56" rx="14" fill="#0f6e66" fill-opacity="0.10"/>
+        <text x="16" y="26">⑥ Escalator</text>
+        <text x="16" y="46" font-size="12.5" font-weight="500" fill="#6f6052">auto follow-up</text>
+      </g>
+    </g>
+
+    <!-- fallback tier -->
+    <rect x="316" y="338" width="572" height="64" rx="14" fill="#ffffff" fill-opacity="0.7" stroke="#9a8a79" stroke-opacity="0.3"/>
+    <text x="334" y="364" font-size="13" font-weight="700" fill="#9a8a79" letter-spacing="1.5">TIERED AI · NEVER GOES DOWN</text>
+    <text x="334" y="388" font-size="16.5" font-weight="600" fill="#2a2018">Gemini 2.5 Flash  →  Groq Llama-3.3-70B  →  deterministic heuristic</text>
+  </g>
+
+  <line x1="908" y1="215" x2="946" y2="215" stroke="#9a8a79" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- OUTPUTS -->
+  <g filter="url(#card)">
+    <rect x="950" y="140" width="190" height="288" rx="20" fill="#ffffff" fill-opacity="0.7" stroke="#1e9e6a" stroke-opacity="0.3"/>
+    <text x="970" y="176" font-size="14" font-weight="700" fill="#9a8a79" letter-spacing="1.5">OUTCOME</text>
+    <text x="970" y="214" font-size="17" font-weight="600" fill="#2a2018">📄 Filed PDF</text>
+    <text x="970" y="250" font-size="17" font-weight="600" fill="#2a2018">✉️ Real email</text>
+    <text x="970" y="286" font-size="17" font-weight="600" fill="#2a2018">🔖 Tracking ID</text>
+    <text x="970" y="322" font-size="17" font-weight="600" fill="#2a2018">✅ AI verify</text>
+    <text x="970" y="358" font-size="17" font-weight="600" fill="#2a2018">🏆 Civic Score</text>
+    <text x="970" y="394" font-size="13.5" font-weight="500" fill="#6f6052">Persisted in</text>
+    <text x="970" y="412" font-size="13.5" font-weight="700" fill="#0a4f49">Firestore</text>
+  </g>
+
+  <text x="60" y="488" font-size="14.5" fill="#9a8a79">Frontend: React 19 · Vite · Tailwind v4 · Motion    Backend: Node · Express · NDJSON streaming    Geo: OpenStreetMap    STT: ElevenLabs Scribe</text>
+  <text x="60" y="514" font-size="14.5" fill="#9a8a79">Hosting: Render (API + SPA) · Vercel (frontend) · Firebase Firestore — all on free tiers, zero billing.</text>
+</svg>

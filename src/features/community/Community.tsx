@@ -18,6 +18,9 @@ import { Logo } from "@/components/Logo";
 import { GlassButton } from "@/components/GlassButton";
 import { LiquidTabs, type TabItem } from "@/components/LiquidTabs";
 import { AuroraBackground } from "@/components/AuroraBackground";
+import { ScoreChip } from "@/components/ScoreChip";
+import { BottomNav } from "@/components/BottomNav";
+import { BackButton } from "@/components/BackButton";
 import { getIdentity, initials } from "@/lib/identity";
 import {
   fetchPosts,
@@ -84,17 +87,25 @@ export function Community() {
   const shown = posts?.filter((p) => filter === 0 || p.type === FILTER_TYPE[filter]) ?? [];
 
   return (
-    <div className="relative min-h-[100dvh] px-4 pb-20 pt-5 md:px-8">
+    <div className="relative min-h-[100dvh] px-4 pb-28 pt-5 md:px-8 md:pb-20">
       <AuroraBackground />
+      <BottomNav />
 
       <header className="mx-auto flex max-w-3xl items-center justify-between">
-        <Link to="/" aria-label="Home">
-          <Logo />
-        </Link>
+        <div className="flex items-center gap-2.5">
+          <BackButton />
+          <Link to="/" aria-label="Home" className="hidden sm:inline-flex">
+            <Logo />
+          </Link>
+        </div>
         <div className="flex items-center gap-3">
+          <Link to="/leaderboard" className="hidden rounded-full px-4 py-2 text-[0.95rem] text-muted hover:text-ink sm:inline-flex">
+            Leaderboard
+          </Link>
           <Link to="/app" className="hidden rounded-full px-4 py-2 text-[0.95rem] text-muted hover:text-ink sm:inline-flex">
             Issues
           </Link>
+          <ScoreChip />
           <GlassButton to="/report" variant="act" className="!min-h-[44px] !px-5 !text-[0.95rem]">
             <Plus size={17} weight="bold" /> Report
           </GlassButton>

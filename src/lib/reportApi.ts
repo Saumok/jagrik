@@ -17,9 +17,16 @@ export interface ResultView {
   mode: { gemini: boolean; email: boolean };
 }
 
+export interface ScoreEvent {
+  action: "report" | "resolve" | "post" | "comment";
+  points: number;
+  citizen: { score: number; level: string };
+}
+
 type RunEvent =
   | { type: "step"; agent: AgentName; label: string; detail?: string; state: "running" | "done" | "error"; checkpoint?: AgentStep["checkpoint"] }
   | { type: "result"; issue: ResultView }
+  | { type: "score"; action: ScoreEvent["action"]; points: number; citizen: ScoreEvent["citizen"] }
   | { type: "error"; message: string }
   | { type: "done" };
 
@@ -33,11 +40,14 @@ export interface ReportInput {
   lng?: number;
   imageFile?: Blob;
   audioBlob?: Blob;
+  reporterId?: string;
+  reporterHandle?: string;
 }
 
 export interface StreamHandlers {
   onSteps: (steps: AgentStep[]) => void;
   onResult: (r: ResultView) => void;
+  onScore?: (s: ScoreEvent) => void;
 }
 
 // Reduce the event stream into the AgentStep[] the war-room consumes.
@@ -78,6 +88,8 @@ export async function streamReport(
   if (input.lng != null) fd.set("lng", String(input.lng));
   if (input.imageFile) fd.set("image", input.imageFile, "evidence.jpg");
   if (input.audioBlob) fd.set("audio", input.audioBlob, "audio.webm");
+  if (input.reporterId) fd.set("reporterId", input.reporterId);
+  if (input.reporterHandle) fd.set("reporterHandle", input.reporterHandle);
 
   const res = await fetch("/api/report", { method: "POST", body: fd, signal });
   if (!res.ok || !res.body) throw new Error(`report failed: ${res.status}`);
@@ -92,6 +104,7 @@ export async function streamReport(
     const e = JSON.parse(line) as RunEvent;
     if (e.type === "step") reduce(e);
     else if (e.type === "result") handlers.onResult(e.issue);
+    else if (e.type === "score") handlers.onScore?.({ action: e.action, points: e.points, citizen: e.citizen });
     else if (e.type === "error") throw new Error(e.message);
   };
 

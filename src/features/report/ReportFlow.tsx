@@ -16,8 +16,9 @@ import { GlassButton } from "@/components/GlassButton";
 import { LiquidTabs, type TabItem } from "@/components/LiquidTabs";
 import { WarRoom } from "./WarRoom";
 import { VoiceCapture, type VoiceResult } from "./VoiceCapture";
-import { streamReport, type ResultView } from "@/lib/reportApi";
+import { streamReport, type ResultView, type ScoreEvent } from "@/lib/reportApi";
 import { buildRun, playRun, SAMPLE_BENGALI } from "@/data/agentPipeline";
+import { getIdentity } from "@/lib/identity";
 import type { AgentStep, Issue } from "@/data/types";
 
 type Mode = "voice" | "photo";
@@ -54,6 +55,7 @@ export function ReportFlow() {
   const [result, setResult] = useState<ResultView | null>(null);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [area, setArea] = useState<string | null>(null);
+  const [score, setScore] = useState<ScoreEvent | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const abort = useRef<AbortController | null>(null);
 
@@ -92,8 +94,10 @@ export function ReportFlow() {
     if (!ready) return;
     setSteps([]);
     setResult(null);
+    setScore(null);
     setPhase("running");
     abort.current = new AbortController();
+    const me = getIdentity();
 
     try {
       await streamReport(
@@ -105,8 +109,10 @@ export function ReportFlow() {
           area: area ?? undefined,
           lat: coords?.lat,
           lng: coords?.lng,
+          reporterId: me.id,
+          reporterHandle: me.handle,
         },
-        { onSteps: setSteps, onResult: setResult },
+        { onSteps: setSteps, onResult: setResult, onScore: setScore },
         abort.current.signal,
       );
       setPhase("done");
@@ -232,7 +238,7 @@ export function ReportFlow() {
                 className="grid gap-5"
               >
                 {result ? (
-                  <ResultCard result={result} settled={phase === "done"} />
+                  <ResultCard result={result} settled={phase === "done"} score={score} />
                 ) : (
                   <div className="glass glass-edge rounded-[22px] p-6 text-muted">Filing your report…</div>
                 )}
@@ -279,7 +285,7 @@ export function ReportFlow() {
   );
 }
 
-function ResultCard({ result, settled }: { result: ResultView; settled: boolean }) {
+function ResultCard({ result, settled, score }: { result: ResultView; settled: boolean; score: ScoreEvent | null }) {
   const demo = !result.mode.gemini || !result.mode.email;
   return (
     <div className="glass glass-edge rounded-[22px] p-6">
@@ -292,6 +298,30 @@ function ResultCard({ result, settled }: { result: ResultView; settled: boolean 
           </span>
         )}
       </div>
+
+      <AnimatePresence>
+        {settled && score && (
+          <motion.div
+            initial={{ opacity: 0, y: 10, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+            className="mt-4 flex items-center gap-3 rounded-[16px] glass-teal px-4 py-3"
+          >
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/40 font-display text-[1.05rem] font-semibold text-teal-deep">
+              +{score.points}
+            </span>
+            <div className="leading-tight">
+              <p className="font-display text-[1rem] font-medium text-ink">Civic Score +{score.points}</p>
+              <p className="text-[0.85rem] text-muted">
+                {score.citizen.score} pts · {score.citizen.level} ·{" "}
+                <Link to="/leaderboard" className="text-teal-deep underline-offset-2 hover:underline">
+                  see the leaderboard
+                </Link>
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="mt-4 grid gap-3">
         <Row label="Tracking ID" value={result.trackingId} mono />

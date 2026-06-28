@@ -15,6 +15,8 @@ import {
 import { Logo } from "@/components/Logo";
 import { GlassButton } from "@/components/GlassButton";
 import { AuroraBackground } from "@/components/AuroraBackground";
+import { BottomNav } from "@/components/BottomNav";
+import { BackButton } from "@/components/BackButton";
 import { CountUp } from "@/components/motionPrimitives";
 import { fetchDashboard, type DashboardData } from "@/lib/dashboardApi";
 import { Donut, BarList, TrendArea, typeMeta } from "./charts";
@@ -51,15 +53,19 @@ export function Dashboard() {
   }, []);
 
   return (
-    <div className="relative min-h-[100dvh] px-4 pb-20 pt-5 md:px-8">
+    <div className="relative min-h-[100dvh] px-4 pb-28 pt-5 md:px-8 md:pb-20">
       <AuroraBackground />
+      <BottomNav />
 
       <header className="mx-auto flex max-w-6xl items-center justify-between">
-        <Link to="/" aria-label="Home">
-          <Logo />
-        </Link>
+        <div className="flex items-center gap-2.5">
+          <BackButton />
+          <Link to="/" aria-label="Home" className="hidden sm:inline-flex">
+            <Logo />
+          </Link>
+        </div>
         <div className="flex items-center gap-3">
-          <Link to="/app" className="glass glass-edge inline-flex items-center gap-2 rounded-full px-4 py-2 text-[0.9rem] text-muted">
+          <Link to="/app" className="hidden glass glass-edge items-center gap-2 rounded-full px-4 py-2 text-[0.9rem] text-muted sm:inline-flex">
             <ArrowLeft size={16} weight="bold" /> Issues
           </Link>
           <GlassButton to="/report" variant="act" className="!min-h-[44px] !px-5 !text-[0.95rem]">

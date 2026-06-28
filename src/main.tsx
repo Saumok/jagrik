@@ -20,6 +20,9 @@ import { IssuesView } from "@/features/app/IssuesView";
 import { IssueDetail } from "@/features/issue/IssueDetail";
 import { Dashboard } from "@/features/dashboard/Dashboard";
 import { Community } from "@/features/community/Community";
+import { Leaderboard } from "@/features/leaderboard/Leaderboard";
+import { Profile } from "@/features/profile/Profile";
+import { Resources } from "@/features/resources/Resources";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -31,6 +34,10 @@ createRoot(document.getElementById("root")!).render(
         <Route path="/issue/:id" element={<IssueDetail />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/community" element={<Community />} />
+        <Route path="/leaderboard" element={<Leaderboard />} />
+        <Route path="/me" element={<Profile />} />
+        <Route path="/citizen/:id" element={<Profile />} />
+        <Route path="/resources" element={<Resources />} />
         <Route path="*" element={<Hero />} />
       </Routes>
     </BrowserRouter>

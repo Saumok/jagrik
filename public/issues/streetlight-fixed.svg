@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 420" width="640" height="420">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2b3550"/><stop offset="1" stop-color="#46506a"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="420" fill="url(#sky)"/>
+  <rect y="262" width="640" height="158" fill="#2f3242"/>
+  <circle cx="540" cy="70" r="26" fill="#e9edf5" opacity="0.85"/>
+      <g transform="translate(300,120)"><rect x="-6" y="0" width="12" height="250" rx="5" fill="#1c1f2b"/>
+      <path d="M6 14h70a18 18 0 0 1 18 18v6" stroke="#1c1f2b" stroke-width="11" fill="none"/>
+      <circle cx="98" cy="48" r="60" fill="#f4c66a" opacity="0.28"/>
+      <ellipse cx="98" cy="44" rx="17" ry="9" fill="#ffd97a"/>
+      <path d="M98 54 L70 150 L126 150 Z" fill="#ffe6a3" opacity="0.45"/></g>
+  <g transform="translate(556,40)"><circle r="30" fill="#1e9e6a"/><path d="M-13 0l9 9L16 -12" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g>
+</svg>

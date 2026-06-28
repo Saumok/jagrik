@@ -33,6 +33,7 @@ export interface StoredIssue {
   photoId?: string;
   photoUrl?: string;
   afterPhotoId?: string;
+  afterPhotoUrl?: string;
   verification?: { fixed: boolean; confidence: number; reason: string; at: number };
   emailDispatched: boolean;
   isDemoSeed?: boolean;

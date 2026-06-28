@@ -85,10 +85,19 @@ function makeIssue(
     affectedCount,
     status,
     statusHistory: history,
-    photoUrl: `https://picsum.photos/seed/${meta.seed}-${id}/640/420`,
+    photoUrl: `/issues/${type}.svg`,
     emailDispatched: true,
     isDemoSeed: true,
   };
+}
+
+// Stamp a resolved issue with an AI-verification verdict + an "after" photo so
+// the before/after card on the detail page is populated for the demo.
+function markVerified(issue: StoredIssue, reason: string): StoredIssue {
+  const resolvedAt = issue.statusHistory.find((h) => h.status === "resolved")?.at ?? now;
+  issue.afterPhotoUrl = `/issues/${issue.issueType}-fixed.svg`;
+  issue.verification = { fixed: true, confidence: 0.9 + rnd() * 0.09, reason, at: resolvedAt };
+  return issue;
 }
 
 function buildSeed(): StoredIssue[] {
@@ -97,14 +106,25 @@ function buildSeed(): StoredIssue[] {
   // The 12-affected cluster + recurring drainage hotspot on Garia Main Road.
   list.push(makeIssue("seed-cluster-001", "drainage", AREAS[0], 6, "in_progress", 12));
   for (let i = 0; i < 4; i++) {
-    list.push(makeIssue(`seed-garia-drain-${i}`, "drainage", AREAS[0], 8 + i * 16, i === 3 ? "resolved" : "reported"));
+    const drain = makeIssue(`seed-garia-drain-${i}`, "drainage", AREAS[0], 8 + i * 16, i === 3 ? "resolved" : "reported");
+    if (i === 3) markVerified(drain, "The choked drain mouth is now clear and water is flowing — matches a completed desilting.");
+    list.push(drain);
   }
 
   // A clean resolved streetlight (the before/after demo target) with Bengali voice.
   const light = makeIssue("seed-light-061", "streetlight", AREAS[2], 9, "resolved");
   light.audioTranscript = "দোকানের সামনের আলোটা এক সপ্তাহ ধরে জ্বলছে না";
   light.audioLang = "bn";
+  markVerified(light, "The streetlight is lit in the after-photo and the dark stretch is gone — fix confirmed.");
   list.push(light);
+
+  // Two more verified-fixed showpieces (pothole + garbage) for a fuller Resolved tab.
+  const pot = makeIssue("seed-pothole-021", "pothole", AREAS[4], 14, "resolved");
+  markVerified(pot, "The road surface is resurfaced and level — the pothole is no longer present.");
+  list.push(pot);
+  const gar = makeIssue("seed-garbage-033", "garbage", AREAS[5], 11, "resolved");
+  markVerified(gar, "The overflowing vat has been cleared and the spot is clean — matches a completed pickup.");
+  list.push(gar);
 
   // ~30 issues spread across areas / types / dates / statuses.
   const statuses: IssueStatus[] = ["reported", "acknowledged", "in_progress", "resolved"];
@@ -132,6 +152,23 @@ export async function seedIfEmpty(): Promise<void> {
   for (const i of buildSeed()) batch.set(firestore.collection(COL).doc(i.id), i);
   await batch.commit();
   console.log("[firestore] seeded demo issues");
+}
+
+// Refresh just the demo seeds (id starts with "seed-"), leaving live-filed
+// reports intact. Used by scripts/cleanup-and-seed.ts to roll out seed changes.
+export async function reseedIssues(): Promise<number> {
+  const fresh = buildSeed();
+  if (firestore) {
+    const snap = await firestore.collection(COL).get();
+    const batch = firestore.batch();
+    for (const d of snap.docs) if (d.id.startsWith("seed-")) batch.delete(d.ref);
+    for (const i of fresh) batch.set(firestore.collection(COL).doc(i.id), i);
+    await batch.commit();
+  } else {
+    for (const [id] of memory) if (id.startsWith("seed-")) memory.delete(id);
+    for (const i of fresh) memory.set(i.id, i);
+  }
+  return fresh.length;
 }
 
 export async function addIssue(issue: StoredIssue): Promise<void> {

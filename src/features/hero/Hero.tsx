@@ -17,6 +17,7 @@ import {
 } from "@phosphor-icons/react";
 import { Logo } from "@/components/Logo";
 import { GlassButton } from "@/components/GlassButton";
+import { LiveBadge } from "@/components/LiveBadge";
 import { LiquidTabs, type TabItem } from "@/components/LiquidTabs";
 import { AuroraBackground } from "@/components/AuroraBackground";
 import { Magnetic, CountUp } from "@/components/motionPrimitives";
@@ -79,7 +80,10 @@ export function Hero() {
 
       {/* ---- NAV ---- */}
       <nav className="mx-auto flex h-[68px] max-w-6xl items-center justify-between px-4 md:px-8">
-        <Logo />
+        <div className="flex items-center gap-3">
+          <Logo />
+          <LiveBadge className="hidden sm:inline-flex" />
+        </div>
         <div className="flex items-center gap-3">
           <a href="#how" className="hidden rounded-full px-4 py-2 text-[0.95rem] text-muted hover:text-ink sm:inline-flex">
             How it works

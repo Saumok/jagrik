@@ -6,6 +6,9 @@ import { Logo } from "@/components/Logo";
 import { GlassButton } from "@/components/GlassButton";
 import { LiquidTabs, type TabItem } from "@/components/LiquidTabs";
 import { AuroraBackground } from "@/components/AuroraBackground";
+import { ScoreChip } from "@/components/ScoreChip";
+import { BottomNav } from "@/components/BottomNav";
+import { BackButton } from "@/components/BackButton";
 import {
   fetchIssues,
   photoSrc,
@@ -49,20 +52,31 @@ export function IssuesView() {
   const shown = issues?.filter((i) => inFilter(i.status, filter)) ?? [];
 
   return (
-    <div className="relative min-h-[100dvh] px-4 pb-20 pt-5 md:px-8">
+    <div className="relative min-h-[100dvh] px-4 pb-28 pt-5 md:px-8 md:pb-20">
       <AuroraBackground />
+      <BottomNav />
 
       <header className="mx-auto flex max-w-6xl items-center justify-between">
-        <Link to="/" aria-label="Home">
-          <Logo />
-        </Link>
+        <div className="flex items-center gap-2.5">
+          <BackButton fallback="/" />
+          <Link to="/" aria-label="Home" className="hidden sm:inline-flex">
+            <Logo />
+          </Link>
+        </div>
         <div className="flex items-center gap-3">
           <Link to="/community" className="hidden rounded-full px-4 py-2 text-[0.95rem] text-muted hover:text-ink sm:inline-flex">
             Community
           </Link>
+          <Link to="/leaderboard" className="hidden rounded-full px-4 py-2 text-[0.95rem] text-muted hover:text-ink md:inline-flex">
+            Leaderboard
+          </Link>
+          <Link to="/resources" className="hidden rounded-full px-4 py-2 text-[0.95rem] text-muted hover:text-ink md:inline-flex">
+            Resources
+          </Link>
           <Link to="/dashboard" className="hidden rounded-full px-4 py-2 text-[0.95rem] text-muted hover:text-ink sm:inline-flex">
             Dashboard
           </Link>
+          <ScoreChip />
           <GlassButton to="/report" variant="act" className="!min-h-[44px] !px-5 !text-[0.95rem]">
             <Plus size={17} weight="bold" /> Report
           </GlassButton>
@@ -98,7 +112,10 @@ export function IssuesView() {
         {issues && shown.length === 0 && (
           <div className="glass glass-edge mt-8 rounded-[20px] p-8 text-center">
             <p className="font-display text-[1.2rem] text-ink">No issues here yet</p>
-            <p className="mt-1 text-muted">Be the first — tap Report.</p>
+            <p className="mt-1 text-muted">Be the first — report something in your neighbourhood.</p>
+            <GlassButton to="/report" variant="act" className="mt-4 !min-h-[44px]">
+              <Plus size={17} weight="bold" /> Report a problem
+            </GlassButton>
           </div>
         )}
 

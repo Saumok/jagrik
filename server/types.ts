@@ -41,7 +41,25 @@ export interface ReportRequest {
   lng?: number;
   area?: string;
   ward?: number;
+  reporterId?: string;
+  reporterHandle?: string;
 }
+
+// ---- Civic Score / gamification ----
+export interface Citizen {
+  id: string;
+  handle: string;
+  area?: string;
+  score: number;
+  reports: number;
+  resolved: number;
+  posts: number;
+  comments: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export type ScoreAction = "report" | "resolve" | "post" | "comment";
 
 // ---- Community Hub (the social space) ----
 export type PostType = "announcement" | "help" | "alert" | "poll" | "general";
@@ -81,6 +99,7 @@ export interface Comment {
 export type RunEvent =
   | { type: "step"; agent: string; label: string; detail?: string; state: "running" | "done" | "error"; checkpoint?: { kind: "pdf" | "email" | "escalation"; value: string } }
   | { type: "result"; issue: ResultIssue }
+  | { type: "score"; action: ScoreAction; points: number; citizen: { score: number; level: string } }
   | { type: "error"; message: string }
   | { type: "done" };
 
@@ -118,8 +137,11 @@ export interface StoredIssue {
   photoId?: string; // served from /api/photo/:id
   photoUrl?: string; // for seeded demo images
   afterPhotoId?: string; // the "fixed" photo (F7)
+  afterPhotoUrl?: string; // seeded demo after-photo (no in-memory bytes)
   verification?: { fixed: boolean; confidence: number; reason: string; at: number };
   emailDispatched: boolean;
+  reporterId?: string;
+  reporterHandle?: string;
   isDemoSeed?: boolean;
 }
 

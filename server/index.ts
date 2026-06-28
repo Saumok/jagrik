@@ -21,12 +21,34 @@ import {
   addComment,
   seedCommunityIfEmpty,
 } from "./lib/community.js";
+import { award, getCitizen, leaderboard, levelFor, seedCitizensIfEmpty } from "./lib/citizens.js";
 import { randomUUID } from "node:crypto";
 import type { ReportRequest, RunEvent } from "./types.js";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+const ISSUE_LABEL: Record<string, string> = {
+  pothole: "pothole", drainage: "drainage issue", streetlight: "streetlight",
+  garbage: "garbage pile-up", water_supply: "water-supply issue", other: "civic issue", unclear: "civic issue",
+};
+
+// Post a celebratory "loop closed" card to the community feed when a report is
+// verified-fixed. Credits the original reporter so the win feels community-driven.
+async function celebrateResolution(issue: import("./types.js").StoredIssue): Promise<void> {
+  const days = Math.max(1, Math.round((Date.now() - issue.createdAt) / 86_400_000));
+  const who = issue.reporterHandle || "a neighbour";
+  const label = ISSUE_LABEL[issue.issueType] ?? "civic issue";
+  await createPost({
+    authorId: "jagrik-system",
+    authorHandle: "Jagrik",
+    type: "announcement",
+    title: `✅ Fixed: ${label} at ${issue.area}`,
+    body: `Resolved in ${days} ${days === 1 ? "day" : "days"} after ${who} reported it — confirmed fixed by AI before/after check. One more win for ${issue.area}. 🎉`,
+    area: issue.area,
+  });
+}
 
 // Memory storage; cap upload size to protect free tiers (Docs/07 §2).
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024 } });
@@ -75,9 +97,21 @@ app.post(
         lng: b.lng ? Number(b.lng) : undefined,
         area: b.area || undefined,
         ward: b.ward ? Number(b.ward) : undefined,
+        reporterId: b.reporterId || undefined,
+        reporterHandle: b.reporterHandle || undefined,
       };
 
-      await runReport(reqData, media, emit);
+      const result = await runReport(reqData, media, emit);
+
+      // Reward the reporter (gamification). Non-fatal — never block the report.
+      if (reqData.reporterId) {
+        try {
+          const citizen = await award(reqData.reporterId, reqData.reporterHandle || "Anonymous citizen", "report", result.area);
+          emit({ type: "score", action: "report", points: 10, citizen: { score: citizen.score, level: levelFor(citizen.score).level } });
+        } catch (e) {
+          console.error("[report] award failed:", e);
+        }
+      }
       emit({ type: "done" });
     } catch (err) {
       console.error("[report] pipeline error:", err);
@@ -132,6 +166,11 @@ app.post("/api/community", async (req, res) => {
     area: b.area,
     pollOptions: Array.isArray(b.pollOptions) ? b.pollOptions : undefined,
   });
+  try {
+    await award(b.authorId, b.authorHandle || "Anonymous citizen", "post", b.area);
+  } catch (e) {
+    console.error("[community] post award failed:", e);
+  }
   res.json({ post });
 });
 app.post("/api/community/:id/upvote", async (req, res) => {
@@ -153,7 +192,29 @@ app.post("/api/community/:id/comments", async (req, res) => {
   if (!b.body) return res.status(400).json({ error: "body required" });
   const comment = await addComment(req.params.id, b.authorId || "anon", b.authorHandle || "Anonymous citizen", b.body);
   if (!comment) return res.status(404).json({ error: "post not found" });
+  if (b.authorId) {
+    try {
+      await award(b.authorId, b.authorHandle || "Anonymous citizen", "comment");
+    } catch (e) {
+      console.error("[community] comment award failed:", e);
+    }
+  }
   res.json({ comment });
+});
+
+// ---- Civic Score / gamification ----
+app.get("/api/leaderboard", async (_req, res) => {
+  try {
+    res.json(await leaderboard());
+  } catch (err) {
+    console.error("[leaderboard] error:", err);
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+app.get("/api/citizen/:id", async (req, res) => {
+  const citizen = await getCitizen(req.params.id);
+  if (!citizen) return res.json({ citizen: null });
+  res.json({ citizen });
 });
 
 // Predictive hotspot dashboard (F9).
@@ -199,9 +260,26 @@ app.post("/api/verify", upload.single("after"), async (req, res) => {
       afterPhotoId,
       verification: { ...verdict, at: Date.now() },
     };
+    const wasResolved = issue.status === "resolved";
     if (verdict.fixed) {
       patch.status = "resolved";
       patch.statusHistory = [...issue.statusHistory, { status: "resolved", at: Date.now(), by: "verification" }];
+      // Reward the original reporter for closing the loop (the big one: 50 pts).
+      if (issue.reporterId) {
+        try {
+          await award(issue.reporterId, issue.reporterHandle || "Anonymous citizen", "resolve", issue.area);
+        } catch (e) {
+          console.error("[verify] award failed:", e);
+        }
+      }
+      // Close the loop publicly: auto-celebrate the fix in the community feed.
+      if (!wasResolved) {
+        try {
+          await celebrateResolution(issue);
+        } catch (e) {
+          console.error("[verify] celebrate failed:", e);
+        }
+      }
     }
     const updated = await updateIssue(issue.id, patch);
     res.json({ verdict, issue: updated });
@@ -222,6 +300,7 @@ if (fs.existsSync(distDir)) {
 // Seed durable storage once (no-op for in-memory), then start.
 seedIfEmpty().catch((e) => console.error("[startup] seed failed:", e));
 seedCommunityIfEmpty().catch((e) => console.error("[startup] community seed failed:", e));
+seedCitizensIfEmpty().catch((e) => console.error("[startup] citizen seed failed:", e));
 
 app.listen(env.port, () => {
   console.log("\n" + startupBanner() + "\n");

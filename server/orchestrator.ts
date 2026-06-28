@@ -160,6 +160,10 @@ export async function runReport(
     photoId = randomUUID();
     putPhoto(photoId, { mime: media.image.mime, content: media.image.buf });
   }
+  // voice-only (no photo) → fall back to the on-brand issue-type illustration so
+  // every card has a meaningful image, never a blank tile.
+  const ART_TYPES = ["pothole", "drainage", "streetlight", "garbage", "water_supply"];
+  const photoUrl = !photoId && ART_TYPES.includes(c.issueType) ? `/issues/${c.issueType}.svg` : undefined;
 
   const issueId = `live-${Date.now()}`;
   const createdAt = Date.now();
@@ -188,7 +192,10 @@ export async function runReport(
     statusHistory: [{ status: "reported", at: createdAt, by: "agent" }],
     complaintPdfId: pdfId,
     photoId,
+    photoUrl,
     emailDispatched: !mail.simulated,
+    reporterId: req.reporterId,
+    reporterHandle: req.reporterHandle,
   };
   await addIssue(stored);
 

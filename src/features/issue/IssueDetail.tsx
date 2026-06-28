@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import {
-  ArrowLeft,
   Buildings,
   DownloadSimple,
   MapPin,
@@ -16,6 +15,7 @@ import {
 } from "@phosphor-icons/react";
 import { Logo } from "@/components/Logo";
 import { AuroraBackground } from "@/components/AuroraBackground";
+import { BackButton } from "@/components/BackButton";
 import {
   fetchIssue,
   photoSrc,
@@ -51,14 +51,17 @@ export function IssueDetail() {
       <AuroraBackground />
 
       <header className="mx-auto flex max-w-4xl items-center justify-between">
-        <Link to="/" aria-label="Home">
-          <Logo size={26} />
-        </Link>
+        <div className="flex items-center gap-2.5">
+          <BackButton />
+          <Link to="/" aria-label="Home" className="hidden sm:inline-flex">
+            <Logo size={26} />
+          </Link>
+        </div>
         <Link
           to="/app"
           className="glass glass-edge inline-flex items-center gap-2 rounded-full px-4 py-2 text-[0.9rem] text-muted"
         >
-          <ArrowLeft size={16} weight="bold" /> All issues
+          All issues
         </Link>
       </header>
 
@@ -241,13 +244,35 @@ function VerifyCard({ issue, onUpdate }: { issue: StoredIssue; onUpdate: (i: Sto
           <SealCheck size={20} weight="fill" />
           <span className="font-display font-medium text-ink">Verified fixed by AI</span>
         </div>
+        {typeof issue.verification.confidence === "number" && (
+          <span className="mt-1 inline-block text-[0.8rem] text-muted">
+            {Math.round(issue.verification.confidence * 100)}% confidence
+          </span>
+        )}
         <p className="mt-2 text-[0.92rem] text-muted">{issue.verification.reason}</p>
-        {issue.afterPhotoId && (
-          <img
-            src={`/api/photo/${issue.afterPhotoId}`}
-            alt="After the fix"
-            className="mt-3 aspect-[16/10] w-full rounded-[14px] object-cover"
-          />
+        {(issue.photoUrl || issue.photoId) && (issue.afterPhotoId || issue.afterPhotoUrl) ? (
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <figure>
+              <img src={photoSrc(issue)} alt="Before the fix" className="aspect-[4/3] w-full rounded-[14px] object-cover" />
+              <figcaption className="mt-1 text-center text-[11px] uppercase tracking-[0.14em] text-faint">Before</figcaption>
+            </figure>
+            <figure>
+              <img
+                src={issue.afterPhotoId ? `/api/photo/${issue.afterPhotoId}` : issue.afterPhotoUrl}
+                alt="After the fix"
+                className="aspect-[4/3] w-full rounded-[14px] object-cover"
+              />
+              <figcaption className="mt-1 text-center text-[11px] uppercase tracking-[0.14em] text-faint">After</figcaption>
+            </figure>
+          </div>
+        ) : (
+          (issue.afterPhotoId || issue.afterPhotoUrl) && (
+            <img
+              src={issue.afterPhotoId ? `/api/photo/${issue.afterPhotoId}` : issue.afterPhotoUrl}
+              alt="After the fix"
+              className="mt-3 aspect-[16/10] w-full rounded-[14px] object-cover"
+            />
+          )
         )}
       </div>
     );
