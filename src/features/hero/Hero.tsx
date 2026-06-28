@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { motion, useReducedMotion } from "motion/react";
+import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import {
   MicrophoneStage,
   Path,
@@ -14,6 +14,8 @@ import {
   Translate,
   MapPinArea,
   ArrowRight,
+  List,
+  X,
 } from "@phosphor-icons/react";
 import { Logo } from "@/components/Logo";
 import { GlassButton } from "@/components/GlassButton";
@@ -49,10 +51,20 @@ function Reveal({ children, delay = 0, className = "" }: { children: ReactNode; 
   );
 }
 
+const MOBILE_LINKS: { to: string; label: string }[] = [
+  { to: "/app", label: "Live issues" },
+  { to: "/community", label: "Community" },
+  { to: "/leaderboard", label: "Leaderboard" },
+  { to: "/dashboard", label: "Dashboard" },
+  { to: "/resources", label: "Help & resources" },
+  { to: "/me", label: "Your profile" },
+];
+
 export function Hero() {
   const reduce = useReducedMotion();
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [menu, setMenu] = useState(false);
   const tick = useRef<number | null>(null);
 
   // auto-advance the showcase; pause on hover/focus so a judge can dwell.
@@ -97,11 +109,55 @@ export function Hero() {
           <Link to="/dashboard" className="hidden rounded-full px-4 py-2 text-[0.95rem] text-muted hover:text-ink sm:inline-flex">
             Dashboard
           </Link>
-          <GlassButton to="/report" variant="primary" className="!min-h-[44px] !px-5 !text-[0.95rem]">
-            Report a problem
+          <GlassButton to="/report" variant="primary" className="!min-h-[44px] !px-4 !text-[0.95rem] sm:!px-5">
+            <span className="hidden sm:inline">Report a problem</span>
+            <span className="sm:hidden">Report</span>
           </GlassButton>
+          {/* mobile menu toggle */}
+          <button
+            type="button"
+            onClick={() => setMenu((m) => !m)}
+            aria-label="Menu"
+            aria-expanded={menu}
+            className="glass glass-edge grid h-11 w-11 place-items-center rounded-full text-ink sm:hidden"
+          >
+            {menu ? <X size={20} weight="bold" /> : <List size={20} weight="bold" />}
+          </button>
         </div>
       </nav>
+
+      {/* ---- MOBILE MENU (sm:hidden) ---- */}
+      <AnimatePresence>
+        {menu && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.25, ease: EASE }}
+            className="sticky top-2 z-40 mx-4 sm:hidden"
+          >
+            <div className="glass glass-edge grid gap-1 rounded-[20px] p-2 shadow-lg">
+              {MOBILE_LINKS.map((l) => (
+                <Link
+                  key={l.to}
+                  to={l.to}
+                  onClick={() => setMenu(false)}
+                  className="rounded-[14px] px-4 py-3 text-[1rem] font-medium text-text hover:bg-nude-150/70"
+                >
+                  {l.label}
+                </Link>
+              ))}
+              <a
+                href="#how"
+                onClick={() => setMenu(false)}
+                className="rounded-[14px] px-4 py-3 text-[1rem] font-medium text-text hover:bg-nude-150/70"
+              >
+                How it works
+              </a>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ---- HERO (interactive, tab-driven) ---- */}
       <header className="mx-auto grid max-w-6xl items-center gap-10 px-4 pb-16 pt-8 md:px-8 lg:grid-cols-[1fr_1.05fr] lg:gap-8 lg:pt-14">
