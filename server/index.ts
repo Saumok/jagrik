@@ -22,7 +22,7 @@ import {
   addComment,
   seedCommunityIfEmpty,
 } from "./lib/community.js";
-import { award, getCitizen, leaderboard, levelFor, seedCitizensIfEmpty } from "./lib/citizens.js";
+import { award, revoke, getCitizen, leaderboard, levelFor, seedCitizensIfEmpty } from "./lib/citizens.js";
 import { randomUUID } from "node:crypto";
 import type { ReportRequest, RunEvent } from "./types.js";
 
@@ -100,15 +100,33 @@ app.post(
         ward: b.ward ? Number(b.ward) : undefined,
         reporterId: b.reporterId || undefined,
         reporterHandle: b.reporterHandle || undefined,
+        liveMode: b.liveMode === "true" || b.liveMode === true,
       };
 
       const result = await runReport(reqData, media, emit);
 
-      // Reward the reporter (gamification). Non-fatal — never block the report.
+      // Reward the reporter — but only for genuinely new reports. A repeat of the
+      // same issue type at the same place by the same citizen earns no points.
       if (reqData.reporterId) {
         try {
-          const citizen = await award(reqData.reporterId, reqData.reporterHandle || "Anonymous citizen", "report", result.area);
-          emit({ type: "score", action: "report", points: 10, citizen: { score: citizen.score, level: levelFor(citizen.score).level } });
+          const all = await listIssues();
+          const dup = all.find(
+            (i) =>
+              i.id !== result.id &&
+              i.reporterId === reqData.reporterId &&
+              i.issueType === result.issueType &&
+              (i.area || "").toLowerCase().trim() === (result.area || "").toLowerCase().trim() &&
+              Date.now() - i.createdAt < 30 * 86_400_000,
+          );
+          if (dup) {
+            await updateIssue(result.id, { scored: false, duplicateOf: dup.id });
+            const me = await getCitizen(reqData.reporterId);
+            emit({ type: "score", action: "report", points: 0, duplicate: true, citizen: { score: me?.score ?? 0, level: me?.level ?? "Citizen" } });
+          } else {
+            const citizen = await award(reqData.reporterId, reqData.reporterHandle || "Anonymous citizen", "report", result.area);
+            await updateIssue(result.id, { scored: true });
+            emit({ type: "score", action: "report", points: 10, citizen: { score: citizen.score, level: levelFor(citizen.score).level } });
+          }
         } catch (e) {
           console.error("[report] award failed:", e);
         }
@@ -187,6 +205,15 @@ app.delete("/api/issues/:id", async (req, res) => {
   if (issue.reporterId && issue.reporterId !== reporterId) {
     return res.status(403).json({ error: "only the reporter can delete this report" });
   }
+  // Claw back any points this report earned so deletion can't farm score.
+  if (issue.reporterId) {
+    try {
+      if (issue.scored) await revoke(issue.reporterId, "report");
+      if (issue.resolveScored) await revoke(issue.reporterId, "resolve");
+    } catch (e) {
+      console.error("[delete] revoke failed:", e);
+    }
+  }
   const ok = await deleteIssue(req.params.id);
   res.json({ ok });
 });
@@ -208,7 +235,8 @@ app.post("/api/community", async (req, res) => {
     pollOptions: Array.isArray(b.pollOptions) ? b.pollOptions : undefined,
   });
   try {
-    await award(b.authorId, b.authorHandle || "Anonymous citizen", "post", b.area);
+    // Hosting a clean-up / drive is real on-ground action → worth more.
+    await award(b.authorId, b.authorHandle || "Anonymous citizen", b.type === "event" ? "event" : "post", b.area);
   } catch (e) {
     console.error("[community] post award failed:", e);
   }
@@ -306,9 +334,10 @@ app.post("/api/verify", upload.single("after"), async (req, res) => {
       patch.status = "resolved";
       patch.statusHistory = [...issue.statusHistory, { status: "resolved", at: Date.now(), by: "verification" }];
       // Reward the original reporter for closing the loop (the big one: 50 pts).
-      if (issue.reporterId) {
+      if (issue.reporterId && !issue.resolveScored) {
         try {
           await award(issue.reporterId, issue.reporterHandle || "Anonymous citizen", "resolve", issue.area);
+          patch.resolveScored = true;
         } catch (e) {
           console.error("[verify] award failed:", e);
         }

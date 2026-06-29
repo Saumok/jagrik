@@ -43,8 +43,8 @@ async function main() {
   for (const p of sys.docs) await p.ref.delete();
   if (sys.size) console.log(`Cleared ${sys.size} old celebration post(s).`);
 
-  // 3. seed the demo board
-  await seedCitizensIfEmpty();
+  // 3. seed the demo board (force: real users may already exist alongside seeds)
+  await seedCitizensIfEmpty(true);
   const board = await leaderboard();
   console.log(`Leaderboard now has ${board.citizens.length} citizens across ${board.areas.length} areas:`);
   for (const c of board.citizens) console.log(`  #${c.rank}  ${c.handle.padEnd(16)} ${String(c.score).padStart(4)} pts  ${c.level}`);

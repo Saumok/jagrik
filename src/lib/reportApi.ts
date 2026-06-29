@@ -18,15 +18,16 @@ export interface ResultView {
 }
 
 export interface ScoreEvent {
-  action: "report" | "resolve" | "post" | "comment";
+  action: "report" | "resolve" | "post" | "comment" | "event";
   points: number;
   citizen: { score: number; level: string };
+  duplicate?: boolean;
 }
 
 type RunEvent =
   | { type: "step"; agent: AgentName; label: string; detail?: string; state: "running" | "done" | "error"; checkpoint?: AgentStep["checkpoint"] }
   | { type: "result"; issue: ResultView }
-  | { type: "score"; action: ScoreEvent["action"]; points: number; citizen: ScoreEvent["citizen"] }
+  | { type: "score"; action: ScoreEvent["action"]; points: number; citizen: ScoreEvent["citizen"]; duplicate?: boolean }
   | { type: "error"; message: string }
   | { type: "done" };
 
@@ -42,6 +43,7 @@ export interface ReportInput {
   audioBlob?: Blob;
   reporterId?: string;
   reporterHandle?: string;
+  liveMode?: boolean;
 }
 
 export interface StreamHandlers {
@@ -113,6 +115,7 @@ export async function streamReport(
   if (input.audioBlob) fd.set("audio", input.audioBlob, "audio.webm");
   if (input.reporterId) fd.set("reporterId", input.reporterId);
   if (input.reporterHandle) fd.set("reporterHandle", input.reporterHandle);
+  if (input.liveMode) fd.set("liveMode", "true");
 
   const res = await fetch("/api/report", { method: "POST", body: fd, signal });
   if (!res.ok || !res.body) throw new Error(`report failed: ${res.status}`);

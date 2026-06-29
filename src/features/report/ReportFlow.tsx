@@ -59,6 +59,7 @@ export function ReportFlow() {
   const [score, setScore] = useState<ScoreEvent | null>(null);
   const [name, setName] = useState(() => getIdentity().handle);
   const [voiceText, setVoiceText] = useState("");
+  const [liveMode, setLiveMode] = useState(false); // default to safe Test mode
   const fileRef = useRef<HTMLInputElement>(null);
   const abort = useRef<AbortController | null>(null);
 
@@ -122,6 +123,7 @@ export function ReportFlow() {
           lng: coords?.lng,
           reporterId: me.id,
           reporterHandle: name.trim(),
+          liveMode,
         },
         { onSteps: setSteps, onResult: setResult, onScore: setScore },
         abort.current.signal,
@@ -256,7 +258,34 @@ export function ReportFlow() {
                   )}
                 </div>
 
-                <div className="mt-7">
+                {/* Test vs Live: where the complaint email actually goes. */}
+                <div className="mt-6 glass glass-edge rounded-[16px] p-3.5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-[0.92rem] font-medium text-ink">
+                        {liveMode ? "Live — send to the real authority" : "Test mode — send to your inbox"}
+                      </div>
+                      <div className="text-[0.8rem] text-muted">
+                        {liveMode
+                          ? "The complaint is emailed to the routed municipal department."
+                          : "Safe to demo: routing is shown, but the email goes to your inbox."}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={liveMode}
+                      onClick={() => setLiveMode((v) => !v)}
+                      className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${liveMode ? "bg-teal" : "bg-nude-300"}`}
+                    >
+                      <span
+                        className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${liveMode ? "translate-x-[22px]" : "translate-x-0.5"}`}
+                      />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mt-5">
                   <GlassButton
                     variant="act"
                     onClick={fileReport}
@@ -299,11 +328,11 @@ export function ReportFlow() {
               >
                 <div className="max-w-[30ch]">
                   <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-onink/60">
-                    Agent War-room
+                    Action in motion
                   </span>
                   <p className="mt-3 text-onink/80">
-                    When you file, watch the agents classify, route, draft and dispatch your
-                    complaint in real time.
+                    When you file, watch Jagrik understand, route, draft and dispatch your
+                    complaint — live, step by step.
                   </p>
                 </div>
               </motion.div>
@@ -344,15 +373,17 @@ function ResultCard({ result, settled, score }: { result: ResultView; settled: b
             initial={{ opacity: 0, y: 10, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-            className="mt-4 flex items-center gap-3 rounded-[16px] glass-teal px-4 py-3"
+            className={`mt-4 flex items-center gap-3 rounded-[16px] px-4 py-3 ${score.duplicate ? "bg-nude-150" : "glass-teal"}`}
           >
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/40 font-display text-[1.05rem] font-semibold text-teal-deep">
-              +{score.points}
+            <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-full font-display text-[1.05rem] font-semibold ${score.duplicate ? "bg-nude-300 text-muted" : "bg-white/40 text-teal-deep"}`}>
+              {score.duplicate ? "0" : `+${score.points}`}
             </span>
             <div className="leading-tight">
-              <p className="font-display text-[1rem] font-medium text-ink">Civic Score +{score.points}</p>
+              <p className="font-display text-[1rem] font-medium text-ink">
+                {score.duplicate ? "Already reported — no extra points" : `Civic Score +${score.points}`}
+              </p>
               <p className="text-[0.85rem] text-muted">
-                {score.citizen.score} pts · {score.citizen.level} ·{" "}
+                {score.duplicate ? "You've flagged this spot before. " : `${score.citizen.score} pts · ${score.citizen.level} · `}
                 <Link to="/leaderboard" className="text-teal-deep underline-offset-2 hover:underline">
                   see the leaderboard
                 </Link>

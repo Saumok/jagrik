@@ -14,6 +14,7 @@ export interface CitizenView {
   resolved: number;
   posts: number;
   comments: number;
+  events: number;
   createdAt: number;
   updatedAt: number;
   level: string;

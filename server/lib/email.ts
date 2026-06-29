@@ -35,22 +35,25 @@ async function getTransporter() {
 }
 
 export interface MailInput {
-  to: string;
+  to: string; // the real authority address
   subject: string;
   text: string;
   pdf?: { filename: string; content: Buffer };
   photo?: { filename: string; content: Buffer };
+  live?: boolean; // true → actually deliver to `to`; false → controlled test inbox
 }
 
 export interface MailResult {
   messageId: string;
   simulated: boolean;
-  to: string;
+  to: string; // where it was actually delivered
+  intendedTo: string; // the real authority it was routed to
+  live: boolean; // whether it went live to the authority
   error?: string; // set when a real send was attempted but failed
 }
 
 // Resend HTTP API — works on hosts that block outbound SMTP (e.g. Render free).
-async function sendViaResend(input: MailInput, to: string): Promise<MailResult> {
+async function sendViaResend(input: MailInput, to: string, intendedTo: string, live: boolean): Promise<MailResult> {
   const attachments: { filename: string; content: string }[] = [];
   if (input.pdf) attachments.push({ filename: input.pdf.filename, content: input.pdf.content.toString("base64") });
   if (input.photo) attachments.push({ filename: input.photo.filename, content: input.photo.content.toString("base64") });
@@ -63,27 +66,29 @@ async function sendViaResend(input: MailInput, to: string): Promise<MailResult> 
     if (!res.ok) {
       const t = await res.text();
       console.error("[email] resend failed:", res.status, t.slice(0, 160));
-      return { messageId: `failed-${Date.now()}`, simulated: true, to, error: `Resend ${res.status}: ${t.slice(0, 100)}` };
+      return { messageId: `failed-${Date.now()}`, simulated: true, to, intendedTo, live, error: `Resend ${res.status}: ${t.slice(0, 100)}` };
     }
     const j = (await res.json()) as { id?: string };
-    return { messageId: j.id || "resend", simulated: false, to };
+    return { messageId: j.id || "resend", simulated: false, to, intendedTo, live };
   } catch (err) {
-    return { messageId: `failed-${Date.now()}`, simulated: true, to, error: (err as Error).message };
+    return { messageId: `failed-${Date.now()}`, simulated: true, to, intendedTo, live, error: (err as Error).message };
   }
 }
 
 export async function sendComplaint(input: MailInput): Promise<MailResult> {
-  // Always route to the controlled demo inbox if one is set — never real
-  // municipal staff during testing (Docs/00, Docs/07 §5).
-  const to = env.demoInbox || input.to;
+  const intendedTo = input.to; // the real authority we routed to
+  // Live mode → deliver to the real authority. Test mode (default) → the
+  // controlled inbox, so municipal staff are never contacted during a demo.
+  const live = !!input.live;
+  const to = live ? intendedTo : env.demoInbox || intendedTo;
 
   // Prefer Resend (HTTP) when configured — reliable on SMTP-blocked hosts.
-  if (env.resendApiKey) return sendViaResend(input, to);
+  if (env.resendApiKey) return sendViaResend(input, to, intendedTo, live);
 
   const t = await getTransporter();
 
   if (!t) {
-    return { messageId: `simulated-${Date.now()}`, simulated: true, to };
+    return { messageId: `simulated-${Date.now()}`, simulated: true, to, intendedTo, live };
   }
 
   const attachments = [];
@@ -100,10 +105,10 @@ export async function sendComplaint(input: MailInput): Promise<MailResult> {
       text: input.text,
       attachments,
     });
-    return { messageId: info.messageId, simulated: false, to };
+    return { messageId: info.messageId, simulated: false, to, intendedTo, live };
   } catch (err) {
     const msg = (err as Error).message || "send failed";
     console.error("[email] send failed:", msg);
-    return { messageId: `failed-${Date.now()}`, simulated: true, to, error: msg };
+    return { messageId: `failed-${Date.now()}`, simulated: true, to, intendedTo, live, error: msg };
   }
 }

@@ -8,22 +8,27 @@ import type { Authority, IssueType, Priority, Classification } from "../types.js
 interface Municipal {
   short: string;
   name: string;
+  domain: string; // the body's REAL official domain (used to build dept addresses)
 }
 
-// Known Indian municipal bodies; unknown cities get a generic corporation.
+// Known Indian municipal bodies and their real official domains. The per-issue
+// department mailbox is built from the body's domain + a department local-part
+// (e.g. roads@mcgm.gov.in). Domains are real published government domains; exact
+// mailboxes should be verified before enabling Live send for production — until
+// then the Test toggle keeps mail going to the controlled inbox.
 const MUNICIPAL: { match: string[]; body: Municipal }[] = [
-  { match: ["kolkata", "calcutta"], body: { short: "KMC", name: "Kolkata Municipal Corporation" } },
-  { match: ["new delhi"], body: { short: "NDMC", name: "New Delhi Municipal Council" } },
-  { match: ["delhi"], body: { short: "MCD", name: "Municipal Corporation of Delhi" } },
-  { match: ["mumbai", "bombay"], body: { short: "BMC", name: "Brihanmumbai Municipal Corporation" } },
-  { match: ["bengaluru", "bangalore"], body: { short: "BBMP", name: "Bruhat Bengaluru Mahanagara Palike" } },
-  { match: ["chennai", "madras"], body: { short: "GCC", name: "Greater Chennai Corporation" } },
-  { match: ["hyderabad"], body: { short: "GHMC", name: "Greater Hyderabad Municipal Corporation" } },
-  { match: ["pune"], body: { short: "PMC", name: "Pune Municipal Corporation" } },
-  { match: ["ahmedabad"], body: { short: "AMC", name: "Ahmedabad Municipal Corporation" } },
-  { match: ["kochi", "cochin"], body: { short: "KMC-K", name: "Kochi Municipal Corporation" } },
-  { match: ["jaipur"], body: { short: "JMC", name: "Jaipur Municipal Corporation" } },
-  { match: ["lucknow"], body: { short: "LMC", name: "Lucknow Municipal Corporation" } },
+  { match: ["kolkata", "calcutta"], body: { short: "KMC", name: "Kolkata Municipal Corporation", domain: "kmcgov.in" } },
+  { match: ["new delhi"], body: { short: "NDMC", name: "New Delhi Municipal Council", domain: "ndmc.gov.in" } },
+  { match: ["delhi"], body: { short: "MCD", name: "Municipal Corporation of Delhi", domain: "mcdonline.nic.in" } },
+  { match: ["mumbai", "bombay"], body: { short: "BMC", name: "Brihanmumbai Municipal Corporation", domain: "mcgm.gov.in" } },
+  { match: ["bengaluru", "bangalore"], body: { short: "BBMP", name: "Bruhat Bengaluru Mahanagara Palike", domain: "bbmp.gov.in" } },
+  { match: ["chennai", "madras"], body: { short: "GCC", name: "Greater Chennai Corporation", domain: "chennaicorporation.gov.in" } },
+  { match: ["hyderabad"], body: { short: "GHMC", name: "Greater Hyderabad Municipal Corporation", domain: "ghmc.gov.in" } },
+  { match: ["pune"], body: { short: "PMC", name: "Pune Municipal Corporation", domain: "punecorporation.org" } },
+  { match: ["ahmedabad"], body: { short: "AMC", name: "Ahmedabad Municipal Corporation", domain: "ahmedabadcity.gov.in" } },
+  { match: ["kochi", "cochin"], body: { short: "KMC-K", name: "Kochi Municipal Corporation", domain: "cochincorporation.kerala.gov.in" } },
+  { match: ["jaipur"], body: { short: "JMC", name: "Jaipur Municipal Corporation", domain: "jaipurmc.org" } },
+  { match: ["lucknow"], body: { short: "LMC", name: "Lucknow Municipal Corporation", domain: "lmc.up.nic.in" } },
 ];
 
 function municipalFor(city?: string): Municipal {
@@ -36,19 +41,20 @@ function municipalFor(city?: string): Municipal {
       .map((w) => w[0]?.toUpperCase() ?? "")
       .join("")
       .slice(0, 4);
-    return { short: `${abbr}MC`, name: `${city} Municipal Corporation` };
+    const slug = city!.toLowerCase().replace(/[^a-z]/g, "").slice(0, 16);
+    return { short: `${abbr}MC`, name: `${city} Municipal Corporation`, domain: `${slug}.gov.in` };
   }
   return MUNICIPAL[0].body; // default Kolkata
 }
 
-const DEPT: Record<IssueType, { dept: string; code: string }> = {
-  pothole: { dept: "Roads Department", code: "RD" },
-  drainage: { dept: "Drainage Department", code: "DR" },
-  streetlight: { dept: "Lighting Department", code: "LT" },
-  garbage: { dept: "Solid Waste Management", code: "SW" },
-  water_supply: { dept: "Water Supply Department", code: "WS" },
-  other: { dept: "Public Grievance Cell", code: "GN" },
-  unclear: { dept: "Public Grievance Cell", code: "GN" },
+const DEPT: Record<IssueType, { dept: string; code: string; mailbox: string }> = {
+  pothole: { dept: "Roads & Engineering Department", code: "RD", mailbox: "roads" },
+  drainage: { dept: "Storm Water Drainage Department", code: "DR", mailbox: "drainage" },
+  streetlight: { dept: "Electrical & Street Lighting Department", code: "LT", mailbox: "streetlight" },
+  garbage: { dept: "Solid Waste Management", code: "SW", mailbox: "swm" },
+  water_supply: { dept: "Water Supply Department", code: "WS", mailbox: "watersupply" },
+  other: { dept: "Public Grievance Cell", code: "GN", mailbox: "grievance" },
+  unclear: { dept: "Public Grievance Cell", code: "GN", mailbox: "grievance" },
 };
 
 // Build the authority for an issue type at a given city (Docs/06 §3 tool).
@@ -62,7 +68,7 @@ export function lookupAuthority(issueType: IssueType, city?: string): Authority 
     name: `${m.short} ${d.dept}`,
     municipalName: m.name,
     handles: [issueType],
-    email: `${issueType}@${m.short.toLowerCase().replace(/[^a-z0-9]/g, "")}-demo.in`,
+    email: `${d.mailbox}@${m.domain}`,
     channelNote: `${m.name} grievance portal`,
   };
 }

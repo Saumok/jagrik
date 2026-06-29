@@ -6,6 +6,7 @@ import {
   SealCheck,
   Megaphone,
   ChatCircleText,
+  CalendarCheck,
   PencilSimple,
   Check,
   Medal,
@@ -57,7 +58,7 @@ export function Profile() {
     citizen ??
     (isMe && loaded
       ? {
-          id: me.id, handle: me.handle, score: 0, reports: 0, resolved: 0, posts: 0, comments: 0,
+          id: me.id, handle: me.handle, score: 0, reports: 0, resolved: 0, posts: 0, comments: 0, events: 0,
           createdAt: Date.now(), updatedAt: Date.now(), level: "Citizen", nextLevelAt: 50, badges: [],
         }
       : null);
@@ -184,9 +185,10 @@ export function Profile() {
           </motion.div>
 
           {/* stat grid */}
-          <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
             <Stat icon={<Plus size={18} weight="bold" />} value={view.reports} label="Reports" />
             <Stat icon={<SealCheck size={18} weight="fill" />} value={view.resolved} label="Resolved" />
+            <Stat icon={<CalendarCheck size={18} weight="fill" />} value={view.events ?? 0} label="Events" />
             <Stat icon={<Megaphone size={18} weight="fill" />} value={view.posts} label="Posts" />
             <Stat icon={<ChatCircleText size={18} weight="fill" />} value={view.comments} label="Comments" />
           </div>

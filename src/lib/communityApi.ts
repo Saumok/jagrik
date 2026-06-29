@@ -1,6 +1,6 @@
 // Client for the Community Hub (mirrors server/lib/community.ts + types).
 
-export type PostType = "announcement" | "help" | "alert" | "poll" | "general";
+export type PostType = "announcement" | "help" | "alert" | "poll" | "event" | "general";
 
 export interface PollOption {
   text: string;

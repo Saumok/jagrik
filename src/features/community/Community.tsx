@@ -13,6 +13,7 @@ import {
   Plus,
   MapPin,
   X,
+  CalendarCheck,
 } from "@phosphor-icons/react";
 import { Logo } from "@/components/Logo";
 import { GlassButton } from "@/components/GlassButton";
@@ -42,6 +43,7 @@ const TYPE_META: Record<PostType, { label: string; color: string; icon: Componen
   help: { label: "Help needed", color: "var(--color-marigold-deep)", icon: Handshake },
   alert: { label: "Alert", color: "var(--color-danger)", icon: Warning },
   poll: { label: "Poll", color: "var(--color-status-progress)", icon: ChartBar },
+  event: { label: "Cleanup / event", color: "var(--color-ok)", icon: CalendarCheck },
   general: { label: "Update", color: "var(--color-muted)", icon: ChatCircle },
 };
 
@@ -49,10 +51,11 @@ const FILTERS: TabItem[] = [
   { id: "all", label: "All", icon: <ChatCircle size={16} weight="fill" /> },
   { id: "announcement", label: "News", icon: <Megaphone size={16} weight="fill" /> },
   { id: "help", label: "Help", icon: <Handshake size={16} weight="fill" /> },
+  { id: "event", label: "Events", icon: <CalendarCheck size={16} weight="fill" /> },
   { id: "alert", label: "Alerts", icon: <Warning size={16} weight="fill" /> },
   { id: "poll", label: "Polls", icon: <ChartBar size={16} weight="fill" /> },
 ];
-const FILTER_TYPE = ["all", "announcement", "help", "alert", "poll"] as const;
+const FILTER_TYPE = ["all", "announcement", "help", "event", "alert", "poll"] as const;
 
 export function Community() {
   const me = useMemo(() => getIdentity(), []);
@@ -163,7 +166,7 @@ function Composer({ me, area, onPosted }: { me: { id: string; handle: string }; 
   const [options, setOptions] = useState<string[]>(["", ""]);
   const [busy, setBusy] = useState(false);
 
-  const types: PostType[] = ["general", "announcement", "help", "alert", "poll"];
+  const types: PostType[] = ["general", "announcement", "help", "event", "alert", "poll"];
   const namedOk = name.trim().length >= 2;
 
   async function submit() {
@@ -213,7 +216,7 @@ function Composer({ me, area, onPosted }: { me: { id: string; handle: string }; 
         value={body}
         onChange={(e) => setBody(e.target.value)}
         rows={3}
-        placeholder={type === "help" ? "What do you need help with?" : type === "alert" ? "What should neighbours watch out for?" : type === "poll" ? "Ask your neighbours a question…" : "Share something with your community…"}
+        placeholder={type === "help" ? "What do you need help with?" : type === "alert" ? "What should neighbours watch out for?" : type === "poll" ? "Ask your neighbours a question…" : type === "event" ? "Organise a clean-up or drive — what, when & where?" : "Share something with your community…"}
         className="mt-3 w-full resize-none rounded-[16px] bg-nude-150/70 px-4 py-3 text-ink placeholder:text-faint focus:outline-none"
       />
 

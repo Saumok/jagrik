@@ -77,7 +77,7 @@ export function VoiceCapture({ onCaptured, captured }: Props) {
       }
 
       setPhase("recording");
-      stopTimer.current = window.setTimeout(stop, 10000); // safety auto-stop
+      stopTimer.current = window.setTimeout(stop, 120000); // safety auto-stop after 2 min
     } catch {
       setPhase("denied");
     }

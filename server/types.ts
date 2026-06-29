@@ -43,6 +43,7 @@ export interface ReportRequest {
   ward?: number;
   reporterId?: string;
   reporterHandle?: string;
+  liveMode?: boolean; // true → email the real authority; false → controlled test inbox
 }
 
 // ---- Civic Score / gamification ----
@@ -55,14 +56,15 @@ export interface Citizen {
   resolved: number;
   posts: number;
   comments: number;
+  events: number;
   createdAt: number;
   updatedAt: number;
 }
 
-export type ScoreAction = "report" | "resolve" | "post" | "comment";
+export type ScoreAction = "report" | "resolve" | "post" | "comment" | "event";
 
 // ---- Community Hub (the social space) ----
-export type PostType = "announcement" | "help" | "alert" | "poll" | "general";
+export type PostType = "announcement" | "help" | "alert" | "poll" | "event" | "general";
 
 export interface PollOption {
   text: string;
@@ -99,7 +101,7 @@ export interface Comment {
 export type RunEvent =
   | { type: "step"; agent: string; label: string; detail?: string; state: "running" | "done" | "error"; checkpoint?: { kind: "pdf" | "email" | "escalation"; value: string } }
   | { type: "result"; issue: ResultIssue }
-  | { type: "score"; action: ScoreAction; points: number; citizen: { score: number; level: string } }
+  | { type: "score"; action: ScoreAction; points: number; citizen: { score: number; level: string }; duplicate?: boolean }
   | { type: "error"; message: string }
   | { type: "done" };
 
@@ -142,6 +144,11 @@ export interface StoredIssue {
   emailDispatched: boolean;
   reporterId?: string;
   reporterHandle?: string;
+  scored?: boolean; // true → report points were awarded (revoked on delete)
+  resolveScored?: boolean; // true → resolve points were awarded (revoked on delete)
+  duplicateOf?: string; // set when this repeats an existing report by the same citizen
+  routedEmail?: string; // the real authority address it was routed to
+  liveMode?: boolean; // whether it was actually sent live vs to the test inbox
   isDemoSeed?: boolean;
 }
 

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, useReducedMotion } from "motion/react";
-import { Trophy, MedalMilitary, MapPinLine, Plus, Crown, Sparkle } from "@phosphor-icons/react";
+import { Trophy, MedalMilitary, MapPinLine, Plus, Crown, Sparkle, MapPin, Medal } from "@phosphor-icons/react";
 import { Logo } from "@/components/Logo";
 import { GlassButton } from "@/components/GlassButton";
 import { LiquidTabs, type TabItem } from "@/components/LiquidTabs";
@@ -9,7 +9,7 @@ import { AuroraBackground } from "@/components/AuroraBackground";
 import { BottomNav } from "@/components/BottomNav";
 import { BackButton } from "@/components/BackButton";
 import { getIdentity, initials } from "@/lib/identity";
-import { fetchLeaderboard, LEVEL_META, type Leaderboard as Board } from "@/lib/scoreApi";
+import { fetchLeaderboard, LEVEL_META, type Leaderboard as Board, type RankedCitizen } from "@/lib/scoreApi";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
@@ -72,6 +72,7 @@ export function Leaderboard() {
         <div className="glass glass-edge mt-5 flex flex-wrap gap-x-5 gap-y-1.5 rounded-[18px] px-5 py-3 text-[0.85rem] text-muted">
           <Pts n={10} label="report an issue" />
           <Pts n={50} label="get it fixed" />
+          <Pts n={20} label="host a clean-up" />
           <Pts n={5} label="post in community" />
           <Pts n={2} label="comment / help" />
         </div>
@@ -93,8 +94,10 @@ export function Leaderboard() {
             {board.citizens.length === 0 ? (
               <Empty />
             ) : (
-              <ol className="mt-6 grid gap-3">
-                {board.citizens.map((c, idx) => {
+              <>
+                <HeroSpotlight c={board.citizens[0]} isMe={board.citizens[0].id === me.id} reduce={!!reduce} />
+              <ol className="mt-4 grid gap-3">
+                {board.citizens.slice(1).map((c, idx) => {
                   const mine = c.id === me.id;
                   const meta = LEVEL_META[c.level];
                   return (
@@ -136,6 +139,7 @@ export function Leaderboard() {
                   );
                 })}
               </ol>
+              </>
             )}
 
             {myRank == null && board.citizens.length > 0 && (
@@ -189,6 +193,62 @@ export function Leaderboard() {
         )}
       </div>
     </div>
+  );
+}
+
+function HeroSpotlight({ c, isMe, reduce }: { c: RankedCitizen; isMe: boolean; reduce: boolean }) {
+  const meta = LEVEL_META[c.level];
+  return (
+    <motion.div
+      initial={reduce ? false : { opacity: 0, y: 16, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.5, ease: EASE }}
+      className="relative mt-6 overflow-hidden rounded-[24px] p-6"
+      style={{ background: `linear-gradient(135deg, color-mix(in srgb, ${meta?.tint ?? "var(--color-teal)"} 22%, var(--color-nude-100)), var(--color-nude-100))` }}
+    >
+      <div className="absolute right-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-white/55 px-3 py-1 text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-marigold-deep">
+        <Crown size={13} weight="fill" /> Community Hero
+      </div>
+
+      <Link to={isMe ? "/me" : `/citizen/${c.id}`} className="flex items-center gap-4">
+        <span
+          className="grid h-16 w-16 shrink-0 place-items-center rounded-full font-display text-[1.4rem] font-bold text-white shadow-md"
+          style={{ background: meta?.tint ?? "var(--color-teal)" }}
+        >
+          {initials(c.handle)}
+        </span>
+        <div className="min-w-0">
+          <div className="truncate font-display text-[1.4rem] font-semibold text-ink">
+            {c.handle}
+            {isMe && <span className="text-muted"> (you)</span>}
+          </div>
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[0.9rem] text-muted">
+            <span className="inline-flex items-center gap-1 font-medium text-teal-deep">
+              <Trophy size={14} weight="fill" /> {c.level}
+            </span>
+            {c.area && (
+              <span className="inline-flex items-center gap-1">
+                <MapPin size={13} weight="fill" className="text-teal" /> {c.area}
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="ml-auto text-right">
+          <div className="font-display text-[2rem] font-semibold leading-none text-ink">{c.score}</div>
+          <div className="text-[11px] text-faint">Civic Score</div>
+        </div>
+      </Link>
+
+      {c.badges.length > 0 && (
+        <div className="mt-4 flex flex-wrap gap-1.5">
+          {c.badges.slice(0, 5).map((b) => (
+            <span key={b.id} className="inline-flex items-center gap-1 rounded-full bg-white/55 px-2.5 py-1 text-[0.78rem] font-medium text-teal-deep">
+              <Medal size={12} weight="fill" /> {b.label}
+            </span>
+          ))}
+        </div>
+      )}
+    </motion.div>
   );
 }
 

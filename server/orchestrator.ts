@@ -126,25 +126,28 @@ export async function runReport(
     text: draft.body,
     pdf: { filename: pdfFilename, content: pdfBuf },
     photo: media.image ? { filename: "evidence.jpg", content: media.image.buf } : undefined,
+    live: req.liveMode,
   });
   const stamp = new Date().toLocaleTimeString("en-IN", { hour12: false });
   const emailLabel = mail.error
     ? "Couldn't send the email — queued for retry"
     : mail.simulated
-      ? "Email prepared (add Gmail creds to send for real)"
-      : "Sent a real email to the department";
+      ? "Complaint prepared for the department"
+      : mail.live
+        ? `Sent to ${authority.name}`
+        : "Sent (test mode — to your inbox)";
   const emailDetail = mail.error
     ? `Delivery error, will retry: ${mail.error.slice(0, 80)}`
-    : mail.simulated
-      ? `Would deliver to ${mail.to}`
-      : "Delivered with photo + PDF attached";
+    : mail.live
+      ? `Delivered to ${mail.intendedTo} with photo + PDF`
+      : `Test mode → ${mail.to}. Live would go to ${mail.intendedTo}`;
   emit({
     type: "step",
     agent: "dispatcher",
     label: emailLabel,
     detail: emailDetail,
     state: mail.error ? "error" : "done",
-    checkpoint: { kind: "email", value: `${mail.to} · ${stamp}` },
+    checkpoint: { kind: "email", value: `${mail.intendedTo} · ${stamp}` },
   });
   await delay(200);
 
@@ -196,6 +199,8 @@ export async function runReport(
     emailDispatched: !mail.simulated,
     reporterId: req.reporterId,
     reporterHandle: req.reporterHandle,
+    routedEmail: mail.intendedTo,
+    liveMode: mail.live,
   };
   await addIssue(stored);
 
