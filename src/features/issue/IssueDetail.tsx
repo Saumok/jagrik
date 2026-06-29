@@ -13,6 +13,8 @@ import {
   SealCheck,
   CircleNotch,
   Trash,
+  Globe,
+  Phone,
 } from "@phosphor-icons/react";
 import { Logo } from "@/components/Logo";
 import { AuroraBackground } from "@/components/AuroraBackground";
@@ -170,6 +172,22 @@ export function IssueDetail() {
                 </a>
               ) : (
                 <p className="mt-3 text-[0.85rem] text-text/60">Complaint PDF available on live-filed reports.</p>
+              )}
+
+              {(issue.routedPortal || issue.routedHelpline) && (
+                <div className="mt-4 grid gap-2 border-t border-white/30 pt-3">
+                  <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-text/55">Follow up directly</div>
+                  {issue.routedPortal && (
+                    <a href={issue.routedPortal} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-[0.9rem] text-teal-deep hover:underline">
+                      <Globe size={15} weight="bold" /> Official complaint portal
+                    </a>
+                  )}
+                  {issue.routedHelpline && (
+                    <a href={`tel:${issue.routedHelpline}`} className="inline-flex items-center gap-2 text-[0.9rem] text-teal-deep hover:underline">
+                      <Phone size={15} weight="fill" /> <span className="font-mono text-[0.85rem]">{issue.routedHelpline}</span> · helpline
+                    </a>
+                  )}
+                </div>
               )}
             </div>
 

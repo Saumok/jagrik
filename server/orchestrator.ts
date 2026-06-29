@@ -200,6 +200,8 @@ export async function runReport(
     reporterId: req.reporterId,
     reporterHandle: req.reporterHandle,
     routedEmail: mail.intendedTo,
+    routedPortal: authority.portal,
+    routedHelpline: authority.helpline,
     liveMode: mail.live,
   };
   await addIssue(stored);
@@ -221,6 +223,10 @@ export async function runReport(
     complaintPdfId: pdfId,
     emailDispatched: !mail.simulated,
     emailMessageId: mail.messageId,
+    routedEmail: mail.intendedTo,
+    routedPortal: authority.portal,
+    routedHelpline: authority.helpline,
+    liveMode: mail.live,
     mode: { gemini: flags.geminiEnabled, email: flags.emailEnabled },
   };
   emit({ type: "result", issue });

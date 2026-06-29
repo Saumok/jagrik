@@ -29,6 +29,8 @@ export interface Authority {
   municipalName?: string;
   handles: IssueType[];
   email: string;
+  portal?: string; // real complaint-portal URL (verified channel)
+  helpline?: string; // real civic helpline number
   escalationParentId?: string;
   channelNote?: string;
 }
@@ -148,6 +150,8 @@ export interface StoredIssue {
   resolveScored?: boolean; // true → resolve points were awarded (revoked on delete)
   duplicateOf?: string; // set when this repeats an existing report by the same citizen
   routedEmail?: string; // the real authority address it was routed to
+  routedPortal?: string; // verified complaint-portal URL
+  routedHelpline?: string; // verified civic helpline
   liveMode?: boolean; // whether it was actually sent live vs to the test inbox
   isDemoSeed?: boolean;
 }
@@ -169,5 +173,9 @@ export interface ResultIssue {
   complaintPdfId?: string;
   emailDispatched: boolean;
   emailMessageId?: string;
+  routedEmail?: string;
+  routedPortal?: string;
+  routedHelpline?: string;
+  liveMode?: boolean;
   mode: { gemini: boolean; email: boolean };
 }

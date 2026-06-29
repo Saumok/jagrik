@@ -10,6 +10,9 @@ import {
   MapTrifold,
   ShieldCheck,
   Sparkle,
+  Globe,
+  Phone,
+  EnvelopeSimple,
 } from "@phosphor-icons/react";
 import { Logo } from "@/components/Logo";
 import { GlassButton } from "@/components/GlassButton";
@@ -261,13 +264,13 @@ export function ReportFlow() {
                 {/* Test vs Live: where the complaint email actually goes. */}
                 <div className="mt-6 glass glass-edge rounded-[16px] p-3.5">
                   <div className="flex items-center justify-between gap-3">
-                    <div>
+                    <div className="min-w-0">
                       <div className="text-[0.92rem] font-medium text-ink">
-                        {liveMode ? "Live — send to the real authority" : "Test mode — send to your inbox"}
+                        {liveMode ? "Live — send to the authority" : "Test mode — send to your inbox"}
                       </div>
                       <div className="text-[0.8rem] text-muted">
                         {liveMode
-                          ? "The complaint is emailed to the routed municipal department."
+                          ? "Emailed to the routed municipal grievance cell."
                           : "Safe to demo: routing is shown, but the email goes to your inbox."}
                       </div>
                     </div>
@@ -276,10 +279,10 @@ export function ReportFlow() {
                       role="switch"
                       aria-checked={liveMode}
                       onClick={() => setLiveMode((v) => !v)}
-                      className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${liveMode ? "bg-teal" : "bg-nude-300"}`}
+                      className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${liveMode ? "bg-teal" : "bg-nude-300"}`}
                     >
                       <span
-                        className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${liveMode ? "translate-x-[22px]" : "translate-x-0.5"}`}
+                        className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${liveMode ? "translate-x-5" : "translate-x-0"}`}
                       />
                     </button>
                   </div>
@@ -406,6 +409,38 @@ function ResultCard({ result, settled, score }: { result: ResultView; settled: b
           }
         />
       </div>
+
+      {(result.routedPortal || result.routedHelpline || result.routedEmail) && (
+        <div className="mt-4 rounded-[16px] bg-nude-150/70 px-4 py-3.5">
+          <div className="flex items-center justify-between">
+            <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-faint">Where this goes</div>
+            <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${result.liveMode ? "bg-teal/15 text-teal-deep" : "bg-nude-300 text-muted"}`}>
+              {result.liveMode ? "LIVE" : "TEST"}
+            </span>
+          </div>
+          <div className="mt-2 grid gap-2">
+            {result.routedEmail && (
+              <div className="flex items-center gap-2 text-[0.9rem] text-text">
+                <EnvelopeSimple size={15} weight="bold" className="shrink-0 text-teal" />
+                <span className="truncate font-mono text-[0.82rem]">{result.routedEmail}</span>
+              </div>
+            )}
+            {result.routedPortal && (
+              <a href={result.routedPortal} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-[0.9rem] text-teal-deep hover:underline">
+                <Globe size={15} weight="bold" className="shrink-0" />
+                <span className="truncate">Official complaint portal</span>
+              </a>
+            )}
+            {result.routedHelpline && (
+              <a href={`tel:${result.routedHelpline}`} className="flex items-center gap-2 text-[0.9rem] text-teal-deep hover:underline">
+                <Phone size={15} weight="fill" className="shrink-0" />
+                <span className="font-mono text-[0.85rem]">{result.routedHelpline}</span>
+                <span className="text-muted">· helpline</span>
+              </a>
+            )}
+          </div>
+        </div>
+      )}
 
       {result.audioTranscript && (
         <div className="mt-4 rounded-[16px] bg-nude-150/70 px-4 py-3">

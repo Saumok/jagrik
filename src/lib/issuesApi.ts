@@ -36,6 +36,10 @@ export interface StoredIssue {
   afterPhotoUrl?: string;
   verification?: { fixed: boolean; confidence: number; reason: string; at: number };
   emailDispatched: boolean;
+  routedEmail?: string;
+  routedPortal?: string;
+  routedHelpline?: string;
+  liveMode?: boolean;
   reporterId?: string;
   reporterHandle?: string;
   isDemoSeed?: boolean;

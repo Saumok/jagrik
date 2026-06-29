@@ -14,6 +14,10 @@ export interface ResultView {
   audioLang?: "bn" | "hi" | "en" | null;
   complaintPdfId?: string;
   emailDispatched: boolean;
+  routedEmail?: string;
+  routedPortal?: string;
+  routedHelpline?: string;
+  liveMode?: boolean;
   mode: { gemini: boolean; email: boolean };
 }
 
