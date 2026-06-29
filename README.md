@@ -17,7 +17,7 @@ Snap a photo or speak a sentence in your language — Jagrik classifies the prob
 <img alt="Billing" src="https://img.shields.io/badge/billing-%E2%82%B90_·_free_tiers-1e9e6a" />
 </p>
 
-**🔗 Live:** [jagrik.vercel.app](https://jagrik.vercel.app) &nbsp;·&nbsp; **Vibe2Ship — Problem Statement 2 · Community Hero**
+**🔗 Live on Google Cloud Run:** [jagrik-550338729500.asia-south1.run.app](https://jagrik-550338729500.asia-south1.run.app) &nbsp;·&nbsp; **Vibe2Ship — Problem Statement 2 · Community Hero**
 
 </div>
 
@@ -117,16 +117,21 @@ npx tsx scripts/cleanup-and-seed.ts   # refresh demo issues + leaderboard in Fir
 
 ---
 
-## Deploy — free, no credit card
+## Deploy — Google Cloud Run
 
-One **Render** web service runs everything (Express serves the built SPA + `/api/*`); **Vercel** hosts the static frontend and proxies `/api` to Render.
+One container serves the built SPA **and** `/api/*`, so a single Cloud Run service is the whole app. It lives in the same GCP project as Firestore — fully Google-native.
 
-1. Push to GitHub.
-2. On [render.com](https://render.com) (sign in with GitHub, no card) → **New → Blueprint** → pick the repo. It reads `render.yaml`.
-3. Set the secret env vars in the Render dashboard (`GEMINI_API_KEY`, `RESEND_API_KEY`, `FIREBASE_SERVICE_ACCOUNT_B64`, `DEMO_INBOX`…). The rest are pre-set.
-4. Deploy → you get a public `https://jagrik-xxxx.onrender.com`. Point Vercel's rewrite at it.
+```bash
+gcloud config set project jagrik-a3357
+gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com
+cp gcp.env.example.yaml gcp.env.yaml   # fill in your keys (gitignored)
+gcloud run deploy jagrik --source . --region asia-south1 \
+  --allow-unauthenticated --memory 512Mi --env-vars-file gcp.env.yaml
+```
 
-> Free tier spins down after ~15 min idle (first request cold-starts ~30–60s — warm it before a demo). Durable data lives in Firestore; demo issues/leaderboard re-seed automatically at startup.
+The `Dockerfile` runs `npm ci → npm run build → npm run start`. Cloud Run injects `PORT`; the frontend calls `/api` on the same origin (no CORS, no rewrites). Durable data lives in Firestore; demo issues/leaderboard re-seed at startup. Add `--min-instances 1` to keep it always-warm during judging.
+
+> Also runs unchanged on **Render** (`render.yaml`) + **Vercel** as a fallback — same Firestore, so data stays consistent across all three.
 
 ---
 

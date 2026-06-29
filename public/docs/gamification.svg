@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 540" width="1240" height="540" font-family="'Segoe UI', system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#faf4ec"/><stop offset="1" stop-color="#efe1d2"/>
+    </linearGradient>
+    <filter id="card" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="12" flood-color="#241b12" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+    <rect width="1240" height="540" fill="url(#bg)"/>
+    <text x="40" y="58" font-size="30" font-weight="700" fill="#241b12">Gamification that rewards outcomes, not noise</text>
+    <text x="40" y="92" font-size="17" fill="#6f6052">Points favour real impact — fixing &amp; organising beat posting. Levels and badges make progress visible.</text>
+    <text x="40" y="132" font-size="14" font-weight="700" letter-spacing="1.5" fill="#9a8a79">POINTS</text>
+    <rect x="40" y="150" width="520" height="44" rx="12" fill="#ffffff" fill-opacity="0.7"/>
+      <circle cx="66" cy="172" r="6" fill="#1e9e6a"/>
+      <text x="86" y="178" font-size="17" fill="#241b12">Get an issue fixed</text>
+      <text x="540" y="178" font-size="18" font-weight="700" fill="#1e9e6a" text-anchor="end">+50</text><rect x="40" y="206" width="520" height="44" rx="12" fill="#ffffff" fill-opacity="0.7"/>
+      <circle cx="66" cy="228" r="6" fill="#c9741f"/>
+      <text x="86" y="234" font-size="17" fill="#241b12">Host a clean-up / drive</text>
+      <text x="540" y="234" font-size="18" font-weight="700" fill="#c9741f" text-anchor="end">+20</text><rect x="40" y="262" width="520" height="44" rx="12" fill="#ffffff" fill-opacity="0.7"/>
+      <circle cx="66" cy="284" r="6" fill="#0f6e66"/>
+      <text x="86" y="290" font-size="17" fill="#241b12">Report an issue</text>
+      <text x="540" y="290" font-size="18" font-weight="700" fill="#0f6e66" text-anchor="end">+10</text><rect x="40" y="318" width="520" height="44" rx="12" fill="#ffffff" fill-opacity="0.7"/>
+      <circle cx="66" cy="340" r="6" fill="#0f6e66"/>
+      <text x="86" y="346" font-size="17" fill="#241b12">Post in the community</text>
+      <text x="540" y="346" font-size="18" font-weight="700" fill="#0f6e66" text-anchor="end">+5</text><rect x="40" y="374" width="520" height="44" rx="12" fill="#ffffff" fill-opacity="0.7"/>
+      <circle cx="66" cy="396" r="6" fill="#6f6052"/>
+      <text x="86" y="402" font-size="17" fill="#241b12">Comment / help</text>
+      <text x="540" y="402" font-size="18" font-weight="700" fill="#6f6052" text-anchor="end">+2</text>
+    <text x="620" y="132" font-size="14" font-weight="700" letter-spacing="1.5" fill="#9a8a79">LEVELS</text>
+    <rect x="620" y="174" width="580" height="8" rx="4" fill="#e7d8c9"/><circle cx="620" cy="178" r="9" fill="#b8a892"/>
+      <text x="620" y="150" font-size="15" font-weight="700" fill="#241b12" text-anchor="middle">Citizen</text>
+      <text x="620" y="208" font-size="12.5" fill="#6f6052" text-anchor="middle">0 pts</text><circle cx="724.4" cy="178" r="9" fill="#0f6e66"/>
+      <text x="724.4" y="150" font-size="15" font-weight="700" fill="#241b12" text-anchor="middle">Guardian</text>
+      <text x="724.4" y="208" font-size="12.5" fill="#6f6052" text-anchor="middle">50 pts</text><circle cx="910" cy="178" r="9" fill="#0a4f49"/>
+      <text x="910" y="150" font-size="15" font-weight="700" fill="#241b12" text-anchor="middle">Champion</text>
+      <text x="910" y="208" font-size="12.5" fill="#6f6052" text-anchor="middle">200 pts</text><circle cx="1200" cy="178" r="9" fill="#c9741f"/>
+      <text x="1200" y="150" font-size="15" font-weight="700" fill="#241b12" text-anchor="middle">Civic Hero</text>
+      <text x="1200" y="208" font-size="12.5" fill="#6f6052" text-anchor="middle">500 pts</text>
+    <text x="620" y="244" font-size="14" font-weight="700" letter-spacing="1.5" fill="#9a8a79">BADGES</text>
+    <rect x="620" y="260" width="135" height="36" rx="18" fill="#1e9e6a" fill-opacity="0.12"/>
+      <circle cx="640" cy="278" r="6" fill="#1e9e6a"/>
+      <text x="654" y="283" font-size="13" font-weight="600" fill="#0a4f49">First Report</text><rect x="765" y="260" width="135" height="36" rx="18" fill="#1e9e6a" fill-opacity="0.12"/>
+      <circle cx="785" cy="278" r="6" fill="#1e9e6a"/>
+      <text x="799" y="283" font-size="13" font-weight="600" fill="#0a4f49">Watchdog</text><rect x="910" y="260" width="135" height="36" rx="18" fill="#1e9e6a" fill-opacity="0.12"/>
+      <circle cx="930" cy="278" r="6" fill="#1e9e6a"/>
+      <text x="944" y="283" font-size="13" font-weight="600" fill="#0a4f49">Fixer</text><rect x="1055" y="260" width="135" height="36" rx="18" fill="#1e9e6a" fill-opacity="0.12"/>
+      <circle cx="1075" cy="278" r="6" fill="#1e9e6a"/>
+      <text x="1089" y="283" font-size="13" font-weight="600" fill="#0a4f49">Loop Closer</text><rect x="620" y="308" width="135" height="36" rx="18" fill="#1e9e6a" fill-opacity="0.12"/>
+      <circle cx="640" cy="326" r="6" fill="#1e9e6a"/>
+      <text x="654" y="331" font-size="13" font-weight="600" fill="#0a4f49">Changemaker</text><rect x="765" y="308" width="135" height="36" rx="18" fill="#1e9e6a" fill-opacity="0.12"/>
+      <circle cx="785" cy="326" r="6" fill="#1e9e6a"/>
+      <text x="799" y="331" font-size="13" font-weight="600" fill="#0a4f49">Force of Nature</text><rect x="910" y="308" width="135" height="36" rx="18" fill="#1e9e6a" fill-opacity="0.12"/>
+      <circle cx="930" cy="326" r="6" fill="#1e9e6a"/>
+      <text x="944" y="331" font-size="13" font-weight="600" fill="#0a4f49">Organiser</text><rect x="1055" y="308" width="135" height="36" rx="18" fill="#1e9e6a" fill-opacity="0.12"/>
+      <circle cx="1075" cy="326" r="6" fill="#1e9e6a"/>
+      <text x="1089" y="331" font-size="13" font-weight="600" fill="#0a4f49">Connector</text><rect x="620" y="356" width="135" height="36" rx="18" fill="#1e9e6a" fill-opacity="0.12"/>
+      <circle cx="640" cy="374" r="6" fill="#1e9e6a"/>
+      <text x="654" y="379" font-size="13" font-weight="600" fill="#0a4f49">Civic Hero</text>
+    <rect x="40" y="452" width="1160" height="52" rx="14" fill="#0a4f49" fill-opacity="0.06"/>
+    <text x="62" y="484" font-size="15.5" fill="#241b12" xml:space="preserve"><tspan font-weight="700" fill="#0a4f49">Anti-cheat built in:</tspan>  deleting a report claws back its points · duplicate reports of the same spot earn 0.</text>
+  </svg>

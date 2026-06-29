@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 540" width="1240" height="540" font-family="'Segoe UI', system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#faf4ec"/><stop offset="1" stop-color="#efe1d2"/>
+    </linearGradient>
+    <filter id="card" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="12" flood-color="#241b12" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+    <rect width="1240" height="540" fill="url(#bg)"/>
+    <text x="40" y="58" font-size="30" font-weight="700" fill="#241b12">The stack — production-grade, zero-billing tiers</text>
+    <text x="40" y="92" font-size="17" fill="#6f6052">Every layer degrades gracefully: the whole product runs end-to-end even with no API keys configured.</text>
+    <g filter="url(#card)"><rect x="40" y="132" width="1160" height="64" rx="16" fill="#ffffff" fill-opacity="0.74" stroke="#0f6e66" stroke-opacity="0.25"/></g>
+      <rect x="40" y="132" width="6" height="64" rx="3" fill="#0f6e66"/>
+      <text x="68" y="160" font-size="13" font-weight="700" letter-spacing="1.5" fill="#0f6e66">FRONTEND</text>
+      <text x="68" y="182" font-size="15.5" fill="#241b12">React 19 · Vite · TypeScript · Tailwind v4 · Motion — a bespoke warm-nude liquid-glass design system, mobile-first</text><g filter="url(#card)"><rect x="40" y="210" width="1160" height="64" rx="16" fill="#ffffff" fill-opacity="0.74" stroke="#c9741f" stroke-opacity="0.25"/></g>
+      <rect x="40" y="210" width="6" height="64" rx="3" fill="#c9741f"/>
+      <text x="68" y="238" font-size="13" font-weight="700" letter-spacing="1.5" fill="#c9741f">BACKEND</text>
+      <text x="68" y="260" font-size="15.5" fill="#241b12">Node · Express · NDJSON streaming · tsx — a thin orchestrator coordinating six specialist agents</text><g filter="url(#card)"><rect x="40" y="288" width="1160" height="64" rx="16" fill="#ffffff" fill-opacity="0.74" stroke="#0a4f49" stroke-opacity="0.25"/></g>
+      <rect x="40" y="288" width="6" height="64" rx="3" fill="#0a4f49"/>
+      <text x="68" y="316" font-size="13" font-weight="700" letter-spacing="1.5" fill="#0a4f49">INTELLIGENCE</text>
+      <text x="68" y="338" font-size="15.5" fill="#241b12">Gemini 2.5 Flash (multimodal) → Groq Llama-3.3-70B → deterministic heuristic · ElevenLabs Scribe (speech-to-text)</text><g filter="url(#card)"><rect x="40" y="366" width="1160" height="64" rx="16" fill="#ffffff" fill-opacity="0.74" stroke="#0f6e66" stroke-opacity="0.25"/></g>
+      <rect x="40" y="366" width="6" height="64" rx="3" fill="#0f6e66"/>
+      <text x="68" y="394" font-size="13" font-weight="700" letter-spacing="1.5" fill="#0f6e66">DATA &amp; ROUTING</text>
+      <text x="68" y="416" font-size="15.5" fill="#241b12">Firebase Firestore (durable) · OpenStreetMap geocoding · location-aware municipal routing + CPGRAMS national fallback</text><g filter="url(#card)"><rect x="40" y="444" width="1160" height="64" rx="16" fill="#ffffff" fill-opacity="0.74" stroke="#c9741f" stroke-opacity="0.25"/></g>
+      <rect x="40" y="444" width="6" height="64" rx="3" fill="#c9741f"/>
+      <text x="68" y="472" font-size="13" font-weight="700" letter-spacing="1.5" fill="#c9741f">CLOUD</text>
+      <text x="68" y="494" font-size="15.5" fill="#241b12">Google Cloud Run (one container: SPA + API) · Cloud Build · Artifact Registry — same project as Firestore</text></svg>
